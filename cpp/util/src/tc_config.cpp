@@ -102,10 +102,12 @@ TC_ConfigDomain::DomainPath TC_ConfigDomain::parseDomainName(const string& path,
 
 TC_ConfigDomain* TC_ConfigDomain::addSubDomain(const string& name)
 {
+    // 若在子域中没找到这个域
     if(_subdomain.find(name) == _subdomain.end())
     {
+        // 在_domain的最后插入name 记录域的插入顺序
         _domain.push_back(name);
-
+        // 新建一个TC_ConfigDomain 插入子域的map中
         _subdomain[name] = new TC_ConfigDomain(name);
     }
     return _subdomain[name];
@@ -188,9 +190,10 @@ void TC_ConfigDomain::insertParamValue(const map<string, string> &m)
 
 void TC_ConfigDomain::setParamValue(const string &name, const string &value)
 {
+    // 将键和值放入_param中
     _param[name] = value;
 
-    //如果key已经存在,则删除
+    //如果key在_key中已经存在（多次配置同一个属性） ,则删除之前的
     for(vector<string>::iterator it = _key.begin(); it != _key.end(); ++it)
     {
         if(*it == name)
@@ -199,42 +202,49 @@ void TC_ConfigDomain::setParamValue(const string &name, const string &value)
             break;
         }
     }
-
+    // 在_key的最后插入name 用于记录配置项的插入顺序
     _key.push_back(name);
 }
 
+// 设置参数/值对
 void TC_ConfigDomain::setParamValue(const string &line)
 {
+    // line为空 返回
     if(line.empty())
     {
         return;
     }
 
+    // 将line 放入line中
     _line.push_back(line);
 
     string::size_type pos = 0;
+    // 遍历这一行
     for(; pos <= line.length() - 1; pos++)
     {
+        // 找到了等号
         if (line[pos] == '=')
         {
+            // 若等号前的一个字符为"\" 不处理
             if(pos > 0 && line[pos-1] == '\\')
             {
                 continue;
             }
-
+            // 获取属性名
             string name  = parse(TC_Common::trim(line.substr(0, pos), " \r\n\t"));
 
+            // 获取属性值
             string value;
             if(pos < line.length() - 1)
             {
                 value = parse(TC_Common::trim(line.substr(pos + 1), " \r\n\t"));
             }
-
+            // 设置参数 键值对
             setParamValue(name, value);
             return;
         }
     }
-
+    // 否则键为整行 值为空
     setParamValue(line, "");
 }
 
@@ -448,38 +458,45 @@ TC_Config& TC_Config::operator=(const TC_Config &tc)
 
 void TC_Config::parse(istream &is)
 {
+    // 先清空root 根域
     _root.destroy();
 
+    // container adaptor 先进后出 如果没有指定使用哪一种容器 那么就使用dequene（双端队列）
     stack<TC_ConfigDomain*> stkTcCnfDomain;
+    // 放入root
     stkTcCnfDomain.push(&_root);
 
     string line;
+    // 读取一行（以遇到\n为标准） 放入line中
     while(getline(is, line))
     {
+        // 去掉字符串头部和尾部的每一个 \r \n \t
         line = TC_Common::trim(line, " \r\n\t");
-
+        // 如果去掉后长度为0 则读取下一行
         if(line.length() == 0)
         {
             continue;
         }
-
+        // 开头为# 注释 读取下一行
         if(line[0] == '#')
         {
             continue;
         }
-        else if(line[0] == '<')
+        else if(line[0] == '<')     // < 开头 一个域的开始或结尾
         {
+            // 找到对应的>
             string::size_type posl = line.find_first_of('>');
-
+            // 没找到 报错
             if(posl == string::npos)
             {
                 throw TC_Config_Exception("[TC_Config::parse]:parse error! line : " + line);
             }
-
+            // 若第二个字符为/ 表示域的结尾
             if(line[1] == '/')
             {
+                // 获取从第三个字符开始的子字符串
                 string sName(line.substr(2, (posl - 2)));
-
+                // 若栈的大小小于等于0 或者栈顶的字符串与此字符串不匹配 报错
                 if(stkTcCnfDomain.size() <= 0)
                 {
                     throw TC_Config_Exception("[TC_Config::parse]:parse error! <" + sName + "> hasn't matched domain.");
@@ -490,22 +507,25 @@ void TC_Config::parse(istream &is)
                     throw TC_Config_Exception("[TC_Config::parse]:parse error! <" + stkTcCnfDomain.top()->getName() + "> hasn't match <" + sName +">.");
                 }
 
-                //弹出
+                //栈弹出
                 stkTcCnfDomain.pop();
             }
             else
             {
+                // 一个域的开始
+                // 获取该域的名字
                 string name(line.substr(1, posl - 1));
-
+                // 新建一个子域 并入栈
                 stkTcCnfDomain.push(stkTcCnfDomain.top()->addSubDomain(name));
             }
         }
         else
         {
+            // 域中间的配置行
             stkTcCnfDomain.top()->setParamValue(line);
         }
     }
-
+    // 如果到最后域的大小不为1 说明还有的栈未弹出 还有域没有结束 报错
     if(stkTcCnfDomain.size() != 1)
     {
         throw TC_Config_Exception("[TC_Config::parse]:parse error : hasn't match");
@@ -514,13 +534,17 @@ void TC_Config::parse(istream &is)
 
 void TC_Config::parseFile(const string &sFileName)
 {
+    // 若长度为0 抛出异常
     if(sFileName.length() == 0)
     {
         throw TC_Config_Exception("[TC_Config::parseFile]:file name is empty");
     }
 
+    // Input file stream class
     ifstream ff;
+    // 打开文件 使流与这个文件相关联
     ff.open(sFileName.c_str());
+    // 打开失败 抛出异常
     if (!ff)
     {
         throw TC_Config_Exception("[TC_Config::parseFile]:fopen fail: " + sFileName, errno);

@@ -63,8 +63,10 @@ bool        ServerConfig::OpenCoroutine;    //是否启用协程处理方式
 size_t      ServerConfig::CoroutineMemSize; //协程占用内存空间的最大大小
 uint32_t    ServerConfig::CoroutineStackSize;   //每个协程的栈大小(默认128k)
 
+
 static string outfill(const string& s, char c = ' ', int n = 29)
 {
+    // 在s的后面拼接c  直到s的长度为n
     return (s + string(abs(n - (int)s.length()), c));
 }
 
@@ -582,6 +584,7 @@ void Application::setHandle(TC_EpollServer::BindAdapterPtr& adapter)
     adapter->setHandle<ServantHandle>();
 }
 
+// 主函数
 void Application::main(int argc, char *argv[])
 {
     try
@@ -589,9 +592,10 @@ void Application::main(int argc, char *argv[])
 #if TARS_SSL
         SSLManager::GlobalInit();
 #endif
+        // 静态方法 忽略SIGPIPE这个信号
         TC_Common::ignorePipe();
 
-        //解析配置文件
+        //解析配置文件 此处读取的是模板配置 也就是tars_template.md中说明的 用于配置RPC调用超时、队列长度、日志等tars内部属性的配置文件 不是我们自己的配置文件
         parseConfig(argc, argv);
 
         //初始化Proxy部分
@@ -718,20 +722,24 @@ void Application::main(int argc, char *argv[])
 
 void Application::parseConfig(int argc, char *argv[])
 {
+    // 命令解析类
     TC_Option op;
 
     op.decode(argc, argv);
 
     //直接输出编译的TARS版本
+    // 如果op的_mParam中有version这个键
     if(op.hasParam("version"))
     {
+        // 输出
         cout << "TARS:" << TARS_VERSION << endl;
         exit(0);
     }
 
     //加载配置文件
+    // 获取配置文件的路径
     ServerConfig::ConfigFile = op.getValue("config");
-
+    // 如果路径为空 退出
     if(ServerConfig::ConfigFile == "")
     {
         cerr << "start server with config, for example: " << argv[0] << " --config=config.conf" << endl;
@@ -739,6 +747,7 @@ void Application::parseConfig(int argc, char *argv[])
         exit(0);
     }
 
+    // 解析配置文件
     _conf.parseFile(ServerConfig::ConfigFile);
 }
 

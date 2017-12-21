@@ -215,8 +215,10 @@ string TC_Common::tostr<std::string>(const std::string &t)
     return t;
 }
 
+// bChar默认为true 如果为true, 则去掉s中每个字符; 如果为false, 则去掉s字符串
 string TC_Common::trim(const string &sStr, const string &s, bool bChar)
 {
+    // 如果为空则直接返回
     if(sStr.empty())
     {
         return sStr;
@@ -277,8 +279,10 @@ string TC_Common::trimleft(const string &sStr, const string &s, bool bChar)
     return sStr.substr(pos);
 }
 
+// bChar   如果为true, 则去掉s中每个字符; 如果为false, 则去掉s字符串
 string TC_Common::trimright(const string &sStr, const string &s, bool bChar)
 {
+    // 如果为空则直接返回
     if(sStr.empty())
     {
         return sStr;
@@ -289,25 +293,30 @@ string TC_Common::trimright(const string &sStr, const string &s, bool bChar)
     */
     if(!bChar)
     {
+        // 如果sStr长度比s小 直接返回
         if(sStr.length() < s.length())
         {
             return sStr;
         }
 
+        // 将sStr最后几个字符（具体几个取决于s的长度） 与s来比较
         if(sStr.compare(sStr.length() - s.length(), s.length(), s) == 0)
         {
+            // 若相等则返回去掉s后的字符串
             return sStr.substr(0, sStr.length() - s.length());
         }
-
+        // 否则返回原字符串
         return sStr;
     }
 
     /**
     * 去掉sStr右边的 字符串s中的字符
     */
+    // 获取sStr的长度
     string::size_type pos = sStr.length();
     while(pos != 0)
     {
+        // 从右向左的遍历sStr中的每一个字符 如果在s中没找到就返回
         if(s.find_first_of(sStr[pos-1]) == string::npos)
         {
             break;
@@ -315,9 +324,9 @@ string TC_Common::trimright(const string &sStr, const string &s, bool bChar)
 
         pos--;
     }
-
+    // 如果pos还是与原来的长度一样 那么就返回原字符串
     if(pos == sStr.length()) return sStr;
-
+    // 否则就返回子字符串
     return sStr.substr(0, pos);
 }
 

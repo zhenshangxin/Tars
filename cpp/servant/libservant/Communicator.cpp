@@ -49,6 +49,7 @@ Communicator::Communicator()
     memset(_communicatorEpoll,0,sizeof(_communicatorEpoll));
 }
 
+// 根据配置来构造
 Communicator::Communicator(TC_Config& conf, const string& domain/* = CONFIG_ROOT_PATH*/)
 : _initialized(false)
 , _terminating(false)
