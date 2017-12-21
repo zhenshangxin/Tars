@@ -69,11 +69,12 @@ public:
     CommunicatorPtr getCommunicator(TC_Config& conf, const string& name = "default")
     {
         TC_LockT<TC_ThreadRecMutex> lock(*this);
-
+        // 查找名为name的Communicator
         map<string, CommunicatorPtr>::iterator it = _comms.find(name);
 
         if (it == _comms.end())
         {
+            // 没找到 新建一个
             _comms[name] = new Communicator(conf);
 
             it = _comms.find(name);

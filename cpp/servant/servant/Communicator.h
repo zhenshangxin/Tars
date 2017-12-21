@@ -27,6 +27,7 @@
 #include "servant/AsyncProcThread.h"
 #include "servant/CommunicatorEpoll.h"
 
+// 默认的模板配置文件的三个域 tars application client 见tars_template.md
 #define CONFIG_ROOT_PATH "/tars/application/client"
 
 namespace tars
