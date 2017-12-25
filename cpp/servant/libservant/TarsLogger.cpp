@@ -118,17 +118,18 @@ void TarsRollLogger::setLogInfo(const string &sApp, const string &sServer, const
     _server    = sServer;
     _logpath   = sLogpath;
 
-    //生成目录
+    //生成本地的日志目录
     TC_File::makeDirRecursive(_logpath + "/" + _app + "/" + _server);
 
     _local.start(1);
 
     //初始化本地循环日志
     _logger.init(_logpath + "/" + _app + "/" + _server + "/" + _app + "." + _server, iMaxSize, iMaxNum);
+    // 设置本地日志的开头格式 如（2017-12-21 10:41:11|27806|DEBUG|）
     _logger.modFlag(TC_DayLogger::HAS_TIME, false);
     _logger.modFlag(TC_DayLogger::HAS_TIME|TC_DayLogger::HAS_LEVEL|TC_DayLogger::HAS_PID, true);
 
-    //设置为异步
+    //设置为异步写日志
     sync(false);
 
 

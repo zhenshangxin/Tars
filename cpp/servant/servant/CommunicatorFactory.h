@@ -84,8 +84,9 @@ public:
 
         string s = "";
 
+        // 根据配置文件来设置属性
         it->second->setProperty(conf);
-
+        // 重新加载属性
         it->second->reloadProperty(s);
 
         return it->second;

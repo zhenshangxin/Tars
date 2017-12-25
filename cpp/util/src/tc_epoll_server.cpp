@@ -2154,6 +2154,7 @@ TC_EpollServer::TC_EpollServer(unsigned int iNetThreadNum)
         _netThreadNum = 15;
     }
 
+    // 创建网络线程 放入一个vector中
     for (size_t i = 0; i < _netThreadNum; ++i)
     {
         TC_EpollServer::NetThread* netThreads = new TC_EpollServer::NetThread(this);

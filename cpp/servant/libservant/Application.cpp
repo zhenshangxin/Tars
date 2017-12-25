@@ -596,6 +596,7 @@ void Application::main(int argc, char *argv[])
         TC_Common::ignorePipe();
 
         //解析配置文件 此处读取的是模板配置 也就是tars_template.md中说明的 用于配置RPC调用超时、队列长度、日志等tars内部属性的配置文件 不是我们自己的配置文件
+        //读到_conf中去
         parseConfig(argc, argv);
 
         //初始化Proxy部分
@@ -609,12 +610,13 @@ void Application::main(int argc, char *argv[])
         //绑定对象和端口
         bindAdapter(adapters);
 
-        //业务应用的初始化
+        //业务应用的初始化 比如LSDeviceTCPGateWay对象的初始化
         initialize();
 
         //输出所有adapter
         outAllAdapter(cout);
 
+        // 遍历adapters的vector
         //设置HandleGroup分组，启动线程
         for (size_t i = 0; i < adapters.size(); ++i)
         {
@@ -632,6 +634,7 @@ void Application::main(int argc, char *argv[])
                 }
 
             }
+            // 为adapter设置handle
             setHandle(adapters[i]);
         }
 
@@ -779,12 +782,12 @@ void Application::initializeClient()
 {
     cout << "\n" << OUT_LINE_LONG << endl;
 
-    //初始化通信器
+    //根据配置文件来初始化通信器
     _communicator = CommunicatorFactory::getInstance()->getCommunicator(_conf);
 
     cout << outfill("[proxy config]:") << endl;
 
-    //输出
+    //输出 打印各项属性的值
     outClient(cout);
 #if TARS_SSL
     try {
@@ -858,6 +861,7 @@ void Application::initializeServer()
 {
     cout << OUT_LINE << "\n" << outfill("[server config]:") << endl;
 
+    // 从模板配置文件中server的部分 获取app名
     ServerConfig::Application  = toDefault(_conf.get("/tars/application/server<app>"), "UNKNOWN");
 
     //缺省采用进程名称
@@ -865,6 +869,7 @@ void Application::initializeServer()
 
     try
     {
+        // 获取当前可执行文件的文件名
         exe = TC_File::extractFileName(TC_File::getExePath());
     }
     catch(TC_File_Exception & ex)
@@ -873,6 +878,7 @@ void Application::initializeServer()
         exe = _conf.get("/tars/application/server<localip>");
     }
 
+    // 读取配置文件中的server部分
     ServerConfig::ServerName        = toDefault(_conf.get("/tars/application/server<server>"), exe);
     ServerConfig::BasePath          = toDefault(_conf.get("/tars/application/server<basepath>"), ".") + "/";
     ServerConfig::DataPath          = toDefault(_conf.get("/tars/application/server<datapath>"), ".") + "/";
@@ -882,8 +888,11 @@ void Application::initializeServer()
     ServerConfig::LocalIp           = _conf.get("/tars/application/server<localip>");
     ServerConfig::Local             = _conf.get("/tars/application/server<local>");
     ServerConfig::Node              = _conf.get("/tars/application/server<node>");
+    // 日志中心的地址
     ServerConfig::Log               = _conf.get("/tars/application/server<log>");
+    // 配置中心的地址
     ServerConfig::Config            = _conf.get("/tars/application/server<config>");
+    // 消息通知中心的地址
     ServerConfig::Notify            = _conf.get("/tars/application/server<notify>");
     ServerConfig::ReportFlow        = _conf.get("/tars/application/server<reportflow>")=="0"?0:1;
     ServerConfig::IsCheckSet        = _conf.get("/tars/application/server<checkset>","1")=="0"?0:1;
@@ -891,8 +900,10 @@ void Application::initializeServer()
     ServerConfig::CoroutineMemSize    =  TC_Common::toSize(toDefault(_conf.get("/tars/application/server<coroutinememsize>"), "1073741824"), 1073741824);
     ServerConfig::CoroutineStackSize    = TC_Common::toSize(toDefault(_conf.get("/tars/application/server<coroutinestack>"), "131072"), 131072);
 
+    // 如果localIP为空
     if(ServerConfig::LocalIp.empty())
     {
+        // 获取本地的所有IP
         vector<string> v = TC_Socket::getLocalHosts();
 
         ServerConfig::LocalIp = "127.0.0.1";
@@ -907,12 +918,14 @@ void Application::initializeServer()
         }
     }
 
-    //输出信息
+    //输出信息 输出服务的配置
     outServer(cout);
 
+    // 获取netthread 默认值为1 （服务的线程数）
     string sNetThread = _conf.get("/tars/application/server<netthread>", "1");
     unsigned int iNetThreadNum = TC_Common::strto<unsigned int>(sNetThread);
 
+    // 若小于1 配置为1
     if(iNetThreadNum < 1)
     {    
         iNetThreadNum = 1;
@@ -925,7 +938,7 @@ void Application::initializeServer()
         iNetThreadNum = 15;
         cout << OUT_LINE << "\nwarning:netThreadNum > 15." << endl;
     }
-
+    // 服务
     _epollServer = new TC_EpollServer(iNetThreadNum);
 
 	//网络线程的内存池配置
@@ -937,14 +950,14 @@ void Application::initializeServer()
     }
 
 
-    //初始化服务是否对空链接进行超时检查
+    //初始化服务是否对空链接进行超时检查 并设置空连接超时时间
     bool bEnable = (_conf.get("/tars/application/server<emptyconcheck>","0")=="1")?true:false;
-
     _epollServer->EnAntiEmptyConnAttack(bEnable);
     _epollServer->setEmptyConnTimeout(TC_Common::strto<int>(toDefault(_conf.get("/tars/application/server<emptyconntimeout>"), "3")));
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    //初始化本地文件cache
+    //初始化本地文件cache 缓存 用来存放各种服务（日志中心、属性上报 其他微服务等）的名称（例如cjmApp.LSMessageRouterServer.MServiceMsgRouterObj）
+    // 与地址（tcp -h 172.18.193.202 -p 20024 -t 3000）
     cout << OUT_LINE << "\n" << outfill("[set file cache ]") << "OK" << endl;
     AppCache::getInstance()->setCacheInfo(ServerConfig::DataPath+ServerConfig::ServerName+".tarsdat",0);
 
@@ -954,22 +967,22 @@ void Application::initializeServer()
     TarsRollLogger::getInstance()->setLogInfo(ServerConfig::Application, ServerConfig::ServerName, ServerConfig::LogPath, ServerConfig::LogSize, ServerConfig::LogNum, _communicator, ServerConfig::Log);
     _epollServer->setLocalLogger(TarsRollLogger::getInstance()->logger());
 
-    //初始化是日志为同步
+    //初始化时日志为同步
     TarsRollLogger::getInstance()->sync(true);
 
     //设置日志级别
     string level = AppCache::getInstance()->get("logLevel");
     if(level.empty())
     {
+        // 默认为debug
         level = _conf.get("/tars/application/server<logLevel>","DEBUG");
     }
-
+    // 设置日志等级
     TarsRollLogger::getInstance()->logger()->setLogLevel(TC_Common::upper(level));
-
     ServerConfig::LogLevel = TC_Common::upper(level);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    //初始化到LogServer代理
+    //初始化到LogServer代理 远程日志
     cout << OUT_LINE << "\n" << outfill("[set time logger] ") << "OK" << endl;
     bool bLogStatReport = (_conf.get("/tars/application/server<logstatreport>", "0") == "1") ? true : false;
     TarsTimeLogger::getInstance()->setLogInfo(_communicator, ServerConfig::Log, ServerConfig::Application, ServerConfig::ServerName, ServerConfig::LogPath, setDivision(), bLogStatReport);
@@ -993,32 +1006,36 @@ void Application::initializeServer()
     //初始化管理对象
     cout << OUT_LINE << "\n" << outfill("[set admin adapter]") << "OK" << endl;
 
+
+    // 其他服务与本地的RPC接口之间的socket信息 如（tcp -h 127.0.0.1 -p 20202 -t 3000）
     if(!ServerConfig::Local.empty())
     {
+        // 添加一个AdminServant
         ServantHelperManager::getInstance()->addServant<AdminServant>("AdminObj");
 
         ServantHelperManager::getInstance()->setAdapterServant("AdminAdapter", "AdminObj");
 
+        // 服务端口管理 监听socket
         TC_EpollServer::BindAdapterPtr lsPtr = new TC_EpollServer::BindAdapter(_epollServer.get());
 
         lsPtr->setName("AdminAdapter");
 
         lsPtr->setEndpoint(ServerConfig::Local);
-
+        // 最大连接数
         lsPtr->setMaxConns(TC_EpollServer::BindAdapter::DEFAULT_MAX_CONN);
-
+        // 流量
         lsPtr->setQueueCapacity(TC_EpollServer::BindAdapter::DEFAULT_QUEUE_CAP);
-
+        // 队列超时
         lsPtr->setQueueTimeout(TC_EpollServer::BindAdapter::DEFAULT_QUEUE_TIMEOUT);
-
+        // 协议吗
         lsPtr->setProtocolName("tars");
-
+        // 注册协议解析器
         lsPtr->setProtocol(AppProtocol::parse);
-
+        // 设置所属的handle组名
         lsPtr->setHandleGroupName("AdminAdapter");
-
+        // 设置ServantHandle数目
         lsPtr->setHandleNum(1);
-
+        // 设置处理网络请求的线程类
         lsPtr->setHandle<ServantHandle>();
 
         _epollServer->bind(lsPtr);
@@ -1032,7 +1049,7 @@ void Application::initializeServer()
         sRspQueue += ".";
         sRspQueue += ServerConfig::ServerName;
         sRspQueue += ".sendrspqueue";
-
+        // 属性上报对象
         PropertyReportPtr p;
         p = _communicator->getStatReport()->createPropertyReport(sRspQueue, PropertyReport::avg());
 
@@ -1102,20 +1119,26 @@ void Application::bindAdapter(vector<TC_EpollServer::BindAdapterPtr>& adapters)
 
     map<string, ServantHandle*> servantHandles;
 
+    // 获取配置文件中server级下面的子域的名称 放入adapterName中
     if (_conf.getDomainVector("/tars/application/server", adapterName))
     {
+        // 遍历
         for (size_t i = 0; i < adapterName.size(); i++)
         {
+            // 获取servant的名称
             string servant = _conf.get("/tars/application/server/" + adapterName[i] + "<servant>");
-
+            // 检验是否合法
             checkServantNameValid(servant, sPrefix);
-
+            // 将adapter名称（例如cjmApp.LSDeviceTCPGateWay.MServiceDeviceTCPGWObjAdapter）
+            // 与servant名称（例如cjmApp.LSDeviceTCPGateWay.MServiceDeviceTCPGWObj）的对应关系放入map中
             ServantHelperManager::getInstance()->setAdapterServant(adapterName[i], servant);
 
+            // 生成一个新的BindAdapter
             TC_EpollServer::BindAdapterPtr bindAdapter = new TC_EpollServer::BindAdapter(_epollServer.get());
                
             // 设置该obj的鉴权账号密码，只要一组就够了
-            {    
+            {
+                //获取账号与密码
                 std::string accKey = _conf.get("/tars/application/server/" + adapterName[i] + "<accesskey>"); 
                 std::string secretKey = _conf.get("/tars/application/server/" + adapterName[i] + "<secretkey>"); 
 
@@ -1126,36 +1149,37 @@ void Application::bindAdapter(vector<TC_EpollServer::BindAdapterPtr>& adapters)
             }  
 
             string sLastPath = "/tars/application/server/" + adapterName[i];
-
+            // 设置名称
             bindAdapter->setName(adapterName[i]);
-
+            // 设置tcp -h 172.18.193.202 -p 20202 -t 60000
             bindAdapter->setEndpoint(_conf[sLastPath + "<endpoint>"]);
-
+            // 最大连接数
             bindAdapter->setMaxConns(TC_Common::strto<int>(_conf.get(sLastPath + "<maxconns>", "128")));
 
             bindAdapter->setOrder(parseOrder(_conf.get(sLastPath + "<order>","allow,deny")));
-
+            // 设置允许的IP
             bindAdapter->setAllow(TC_Common::sepstr<string>(_conf[sLastPath + "<allow>"], ";,", false));
-
+            // 设置禁止的IP
             bindAdapter->setDeny(TC_Common::sepstr<string>(_conf.get(sLastPath + "<deny>",""), ";,", false));
-
+            // 设置队列最大容量
             bindAdapter->setQueueCapacity(TC_Common::strto<int>(_conf.get(sLastPath + "<queuecap>", "1024")));
-
+            // 设置消息超时时间
             bindAdapter->setQueueTimeout(TC_Common::strto<int>(_conf.get(sLastPath + "<queuetimeout>", "10000")));
-
+            // 协议名
             bindAdapter->setProtocolName(_conf.get(sLastPath + "<protocol>", "tars"));
 
             if (bindAdapter->isTarsProtocol())
             {
+                // 设置解析协议的函数
                 bindAdapter->setProtocol(AppProtocol::parse);
             }
-
+            // 设置所属的handle组名
             bindAdapter->setHandleGroupName(_conf.get(sLastPath + "<handlegroup>", adapterName[i]));
-
+            // 设置handle的数目（线程数）
             bindAdapter->setHandleNum(TC_Common::strto<int>(_conf.get(sLastPath + "<threads>", "0")));
-
+            // 设置服务端回包缓存的大小限制
             bindAdapter->setBackPacketBuffLimit(iBackPacketBuffLimit);
-
+            // 绑定监听socket
             _epollServer->bind(bindAdapter);
 
             adapters.push_back(bindAdapter);

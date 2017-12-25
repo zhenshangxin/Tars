@@ -27,15 +27,16 @@ void AppCache::setCacheInfo(const string &sFile,int32_t iSynInterval)
     try
     {
         TC_LockT<TC_ThreadMutex> lock(*this);
-
+        // 获取文件路径
         string sPath = TC_File::extractFilePath(sFile);
-
+        // 创建文件夹 如果文件夹已存在 则返回
         TC_File::makeDirRecursive(sPath);
 
         _file = sFile;
 
         _synInterval = iSynInterval;
 
+        // 判断文件是否存在
         if (TC_File::isFileExistEx(_file))
         {
             _fileCache.parseFile(_file);
