@@ -61,9 +61,11 @@ void TC_Socket::init(int fd, bool bOwner, int iDomain)
 void TC_Socket::createSocket(int iSocketType, int iDomain)
 {
     assert(iSocketType == SOCK_STREAM || iSocketType == SOCK_DGRAM);
+    // 先关闭之前的socket
     close();
-
+    // socket类型
     _iDomain    = iDomain;
+    // 新建一个socket
     _sock       = socket(iDomain, iSocketType, 0);
 
     if(_sock < 0)

@@ -31,7 +31,7 @@ namespace tars
 class TC_ThreadCond;
 
 /**
- * @brief 线程互斥对象
+ * @brief 线程互斥对象 异常类
  */
 struct TC_ThreadMutex_Exception : public TC_Lock_Exception
 {
@@ -102,7 +102,7 @@ protected:
 };
 
 /**
-* @brief 线程锁类. 
+* @brief 线程锁类.  recursive 允许同一线程进行多次加锁
 *  
 * 采用线程库实现
 **/
@@ -168,6 +168,7 @@ private:
     /**
     锁对象
     */
+    // mutable 即使在一个const对象的成员中也可以被改变
     mutable pthread_mutex_t _mutex;
     mutable int _count;
 };

@@ -32,6 +32,7 @@ __BEGIN_DECLS
 
 #define TARS_LOCK "lock ; "
 
+//变量如果加了 volatile 修饰，则每次使用会从内存重新装载内容，而不是直接从寄存器拷贝内容。
 typedef struct { volatile int counter; } tars_atomic_t;
 
 #define tars_atomic_read(v)        ((v)->counter)
@@ -137,6 +138,7 @@ public:
      */
     void inc_fast()
     {
+        // 插入汇编语句
         __asm__ __volatile__(
             TARS_LOCK "incl %0"
             :"=m" (_value.counter)

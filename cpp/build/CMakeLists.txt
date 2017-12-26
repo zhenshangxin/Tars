@@ -13,6 +13,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2 -Wall -Wno-deprecated")
 #set(CMAKE_BUILD_TYPE "Debug")
 
 set(TARS_VERSION "1.1.0")
+#添加预处理宏定义
 add_definitions(-DTARS_VERSION="${TARS_VERSION}")
 set(TARS_SSL 0)
 add_definitions(-DTARS_SSL=${TARS_SSL})

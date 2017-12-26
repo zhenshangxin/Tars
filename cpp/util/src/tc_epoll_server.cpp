@@ -251,24 +251,37 @@ void TC_EpollServer::Handle::handleImp()
 
 ////////////////////////////BindAdapter///////////////////////////////////
 TC_EpollServer::BindAdapter::BindAdapter(TC_EpollServer *pEpollServer)
+// 统计上报的对象
 : _pReportQueue(NULL)
 , _pReportConRate(NULL)
 , _pReportTimeoutNum(NULL)
+  //服务
 , _pEpollServer(pEpollServer)
+  // adapter所在的组
 , _handleGroup(NULL)
+  // 协议解析所用的方法（默认输入什么就输出什么）
 , _pf(echo_protocol)
+  // 首个数据包的包头过滤 默认什么都不做
 , _hf(echo_header_filter)
+
 , _name("")
 , _handleGroupName("")
+  // 最大连接数 默认为1024
 , _iMaxConns(DEFAULT_MAX_CONN)
+  // 当前连接数
 , _iCurConns(0)
+  // handle个数
 , _iHandleNum(0)
 , _eOrder(ALLOW_DENY)
+  // 队列容量 超时
 , _iQueueCapacity(DEFAULT_QUEUE_CAP)
 , _iQueueTimeout(DEFAULT_QUEUE_TIMEOUT)
+
 , _iHeaderLen(0)
+  // 上次心跳发送时间
 , _iHeartBeatTime(0)
 , _protocolName("tars")
+  //回包缓存限制大小
 , _iBackPacketBuffLimit(0)
 {
 }
@@ -1472,20 +1485,31 @@ size_t TC_EpollServer::NetThread::ConnectionList::size()
 
 //////////////////////////////NetThread//////////////////////////////////
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
+// epollserver对象
 : _epollServer(epollServer)
+//
 , _listSize(0)
+// 是否停止
 , _bTerminate(false)
+// epoll是否已经创建
 , _createEpoll(false)
+// handle是否已经启动
 , _handleStarted(false)
+  // 管理连接的链表
 , _list(this)
+  // 是否有UDP监听
 , _hasUdp(false)
+  // 空连接检测机制开关
 , _bEmptyConnAttackCheck(false)
+  // 空连接超时时间,单位是毫秒,默认值2s
 , _iEmptyCheckTimeout(MIN_EMPTY_CONN_TIMEOUT)
+  // udp包的缓存大小
 , _nUdpRecvBufferSize(DEFAULT_RECV_BUFFERSIZE)
+  // 内存池
 , _bufferPool(NULL)
 {
+    // tc_socket对象
     _shutdown.createSocket();
-
     _notify.createSocket();
 }
 
@@ -1551,10 +1575,12 @@ int  TC_EpollServer::NetThread::getEmptyConnTimeout() const
 
 int  TC_EpollServer::NetThread::bind(BindAdapterPtr &lsPtr)
 {
+    // 遍历监听socket与adapter的数组
     map<int, BindAdapterPtr>::iterator it = _listeners.begin();
-
+    // 若是找到了
     while (it != _listeners.end())
     {
+        // adapter的名字相同 报错
         if(it->second->getName() == lsPtr->getName())
         {
             throw TC_Exception("bind name '" + lsPtr->getName() + "' conflicts.");
@@ -1562,12 +1588,13 @@ int  TC_EpollServer::NetThread::bind(BindAdapterPtr &lsPtr)
         ++it;
     }
 
+    // 获取要监听的端口信息 如（tcp -h 127.0.0.1 -p 20202 -t 3000）
     const TC_Endpoint &ep = lsPtr->getEndpoint();
-
+    // 获取socket
     TC_Socket& s = lsPtr->getSocket();
-
+    // 绑定地址
     bind(ep, s);
-
+    // map中创建对应的项
     _listeners[s.getfd()] = lsPtr;
 
     return s.getfd();
@@ -1613,6 +1640,7 @@ void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 
     if(ep.isTcp() && !ep.isUnixLocal())
     {
+        // socket选项
         s.listen(1024);
         s.setKeepAlive();
         s.setTcpNoDelay();
@@ -2137,10 +2165,15 @@ size_t TC_EpollServer::NetThread::getSendRspSize()
 }
 //////////////////////////////////////////////////////////////
 TC_EpollServer::TC_EpollServer(unsigned int iNetThreadNum)
+//统计服务端相应队列大小的上报的对象
 : _pReportRspQueue(NULL)
+// 网络线程数目
 , _netThreadNum(iNetThreadNum)
+// 服务是否停止
 , _bTerminate(false)
+// 业务是否启动
 , _handleStarted(false)
+// 本地循环日志
 , _pLocalLogger(NULL)
 {
     if(_netThreadNum < 1)
@@ -2205,6 +2238,7 @@ void TC_EpollServer::terminate()
         notifyAll();
     }
 }
+    // 是否启用防止空链接攻击的机制
 void TC_EpollServer::EnAntiEmptyConnAttack(bool bEnable)
 {
     for(size_t i = 0; i < _netThreads.size(); ++i)
@@ -2223,6 +2257,7 @@ void TC_EpollServer::setEmptyConnTimeout(int timeout)
 
 void TC_EpollServer::setNetThreadBufferPoolInfo(size_t minBlock, size_t maxBlock, size_t maxBytes)
 {
+    // 设置所有网络线程的缓存
     for(size_t i = 0; i < _netThreads.size(); ++i)
     {
         _netThreads[i]->_poolMinBlockSize = minBlock;
@@ -2234,11 +2269,11 @@ void TC_EpollServer::setNetThreadBufferPoolInfo(size_t minBlock, size_t maxBlock
 int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
 {
     int iRet = 0;
-
+    // 遍历线程组
     for(size_t i = 0; i < _netThreads.size(); ++i)
     {
         if(i == 0)
-        {
+        {   // 为第一个网络线程绑定adapter（监听的socket）
             iRet = _netThreads[i]->bind(lsPtr);
         }
         else

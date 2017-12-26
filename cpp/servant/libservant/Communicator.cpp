@@ -72,12 +72,15 @@ void Communicator::setProperty(TC_Config& conf, const string& domain/* = CONFIG_
 {
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
+    // 获取域下面的参数值对 放到_properties中去 CONFIG_ROOT_PATH默认为/tars/application/client
     conf.getDomainMap(domain, _properties);
 
     string defaultValue = "dft";
+    // 如果enableset 或 setdivision的值为默认值（或没有值）
     if ((defaultValue == getProperty("enableset", defaultValue))
             || (defaultValue == getProperty("setdivision", defaultValue)))
     {
+        // 从配置文件中获取
         _properties["enableset"] = conf.get("/tars/application<enableset>", "n");
         _properties["setdivision"] = conf.get("/tars/application<setdivision>", "NULL");
     }
@@ -87,10 +90,12 @@ void Communicator::setProperty(TC_Config& conf, const string& domain/* = CONFIG_
 
 void Communicator::initClientConfig()
 {
+    // 判断配置文件中是否打开了set
     ClientConfig::SetOpen = TC_Common::lower(getProperty("enableset", "n"))=="y"?true:false;
 
     if (ClientConfig::SetOpen)
     {
+        // 客户端set分组
         ClientConfig::SetDivision = getProperty("setdivision");
 
         vector<string> vtSetDivisions = TC_Common::sepstr<string>(ClientConfig::SetDivision,".");
@@ -109,12 +114,13 @@ void Communicator::initClientConfig()
     }
 
     ClientConfig::LocalIp = getProperty("localip", "");
-
     if (ClientConfig::SetLocalIp.empty())
     {
+        // 若为空 获取本地所有IP
         vector<string> v = TC_Socket::getLocalHosts();
         for (size_t i = 0; i < v.size(); i++)
         {
+            // 设置为第一个遇到的不是127.0.0.1的IP
             if (v[i] != "127.0.0.1" && ClientConfig::LocalIp.empty())
             {
                 ClientConfig::LocalIp = v[i];
@@ -136,6 +142,7 @@ void Communicator::initClientConfig()
         exe = ClientConfig::LocalIp;
     }
 
+    // 客户端模块的名称
     ClientConfig::ModuleName = getProperty("modulename", exe);
 }
 
@@ -178,6 +185,7 @@ void Communicator::reloadLocator()
     }
 }
 
+    // 重新加载属性
 int Communicator::reloadProperty(string & sResult)
 {
     for(size_t i = 0; i < _clientThreadNum; ++i)

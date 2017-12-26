@@ -595,7 +595,7 @@ void Application::main(int argc, char *argv[])
         // 静态方法 忽略SIGPIPE这个信号
         TC_Common::ignorePipe();
 
-        //解析配置文件 此处读取的是模板配置 也就是tars_template.md中说明的 用于配置RPC调用超时、队列长度、日志等tars内部属性的配置文件 不是我们自己的配置文件
+        //解析配置文件 此处读取的是模板配置(经过修改后的) 也就是tars_template.md中说明的 用于配置RPC调用超时、队列长度、日志等tars内部属性的配置文件 不是我们自己的配置文件
         //读到_conf中去
         parseConfig(argc, argv);
 
@@ -725,7 +725,7 @@ void Application::main(int argc, char *argv[])
 
 void Application::parseConfig(int argc, char *argv[])
 {
-    // 命令解析类
+    // 命令行参数解析类
     TC_Option op;
 
     op.decode(argc, argv);
@@ -734,7 +734,7 @@ void Application::parseConfig(int argc, char *argv[])
     // 如果op的_mParam中有version这个键
     if(op.hasParam("version"))
     {
-        // 输出
+        // 输出tars 的版本信息 TARS_VERSION 在cmakelist中定义
         cout << "TARS:" << TARS_VERSION << endl;
         exit(0);
     }
@@ -941,10 +941,11 @@ void Application::initializeServer()
     // 服务
     _epollServer = new TC_EpollServer(iNetThreadNum);
 
-	//网络线程的内存池配置
+    //网络线程的内存池配置
     {
         size_t minBlockSize = TC_Common::strto<size_t>(toDefault(_conf.get("/tars/application/server<poolminblocksize>"), "1024")); // 1KB
         size_t maxBlockSize = TC_Common::strto<size_t>(toDefault(_conf.get("/tars/application/server<poolmaxblocksize>"), "8388608")); // 8MB
+        // 内存池的最大字节数
         size_t maxBytes = TC_Common::strto<size_t>(toDefault(_conf.get("/tars/application/server<poolmaxbytes>"), "67108864")); // 64MB
         _epollServer->setNetThreadBufferPoolInfo(minBlockSize, maxBlockSize, maxBytes);
     }
@@ -1012,12 +1013,14 @@ void Application::initializeServer()
     {
         // 添加一个AdminServant
         ServantHelperManager::getInstance()->addServant<AdminServant>("AdminObj");
-
+        // 设置adapter为AdminAdapter
         ServantHelperManager::getInstance()->setAdapterServant("AdminAdapter", "AdminObj");
 
+        // 新建一个bindAdapter
         // 服务端口管理 监听socket
         TC_EpollServer::BindAdapterPtr lsPtr = new TC_EpollServer::BindAdapter(_epollServer.get());
 
+        // 设置名字
         lsPtr->setName("AdminAdapter");
 
         lsPtr->setEndpoint(ServerConfig::Local);
@@ -1037,7 +1040,7 @@ void Application::initializeServer()
         lsPtr->setHandleNum(1);
         // 设置处理网络请求的线程类
         lsPtr->setHandle<ServantHandle>();
-
+        // 为adapter绑定监听的socket
         _epollServer->bind(lsPtr);
     }
 

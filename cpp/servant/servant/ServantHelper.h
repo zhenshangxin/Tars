@@ -76,6 +76,7 @@ public:
             cerr<<"[TARS]ServantHelperManager::addServant "<< id <<" not find adapter.(maybe not conf in the web)"<<endl;
             throw runtime_error("[TARS]ServantHelperManager::addServant " + id + " not find adapter.(maybe not conf in the web)");
         }
+        // 创建一个新的ServantCreation
         _servant_creator[id] = new ServantCreation<T>();
     }
 

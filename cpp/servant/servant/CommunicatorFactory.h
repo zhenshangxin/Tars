@@ -47,12 +47,14 @@ public:
      */
     CommunicatorPtr getCommunicator(const string& name = "default")
     {
+        // 构造时上锁 析构时解锁
         TC_LockT<TC_ThreadRecMutex> lock(*this);
 
         map<string, CommunicatorPtr>::iterator it = _comms.find(name);
 
         if (it == _comms.end())
         {
+            // 若没找到 则新建一个Communicator
             _comms[name] = new Communicator();
 
             it = _comms.find(name);
