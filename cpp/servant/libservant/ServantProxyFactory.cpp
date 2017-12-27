@@ -32,7 +32,8 @@ ServantProxyFactory::~ServantProxyFactory()
 ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& name,const string& setName)
 {
     TC_LockT<TC_ThreadRecMutex> lock(*this);
-
+    // setName默认为空 servantName为objName
+    // 因此格式为objectName加上：（cjm.LSPtoPLinkServer.MServicePtoPLinkObj：）
     string tmpObjName = name + ":" + setName;
     // 从已创建的对象中寻找
     map<string, ServantPrx>::iterator it = _servantProxy.find(tmpObjName);
@@ -42,7 +43,7 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
         return it->second.get();
     }
 
-
+    // 根据线程数来创建对应数量的ObjectProxy
     ObjectProxy ** ppObjectProxy = new ObjectProxy * [_comm->getClientThreadNum()];
     assert(ppObjectProxy != NULL);
 

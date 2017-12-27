@@ -22,9 +22,11 @@
 namespace tars
 {
 
+
 AsyncProcThread::AsyncProcThread(size_t iQueueCap)
 : _terminate(false)
 {
+    // 异步队列大小为10000
      _msgQueue = new ReqInfoQueue(iQueueCap);
 }
 

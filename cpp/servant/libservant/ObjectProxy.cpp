@@ -36,14 +36,17 @@ ObjectProxy::ObjectProxy(CommunicatorEpoll * pCommunicatorEpoll, const string & 
 , _endpointManger(NULL)
 , _servantProxy(NULL)
 {
+    // 找@的位置
     string::size_type pos = sObjectProxyName.find_first_of('@');
 
     if(pos != string::npos)
     {
+        // 找到了
         _name = sObjectProxyName.substr(0,pos);
     }
     else
     {
+        // 未找到
         _name = sObjectProxyName;
         //启用set或者指定set调用
         if(ClientConfig::SetOpen || !_invokeSetId.empty())
@@ -54,6 +57,7 @@ ObjectProxy::ObjectProxy(CommunicatorEpoll * pCommunicatorEpoll, const string & 
         }
     }
 
+    // 设置请求与回复的处理函数
     _proxyProtocol.requestFunc  = ProxyProtocol::tarsRequest;
     _proxyProtocol.responseFunc = ProxyProtocol::tarsResponse;
 

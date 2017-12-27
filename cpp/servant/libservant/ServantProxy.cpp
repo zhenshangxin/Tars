@@ -251,8 +251,11 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
 , _queueSize(1000)
 , _minTimeout(100)
 {
+
     _endpointInfo = new EndpointManagerThread(pCommunicator, (*_objectProxy)->name());
 
+
+    // 为每个_objectProxy设置ServantProxy
     for(size_t i = 0;i < _objectProxyNum; ++i)
     {
        (*(_objectProxy + i))->setServantProxy(this);
@@ -260,6 +263,7 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
 
     if(pCommunicator)
     {
+        // 设置请求队列的大小
         _queueSize =  TC_Common::strto<int>(pCommunicator->getProperty("reqqueuenum", "1000"));
         if(_queueSize < 1000)
         {
@@ -267,11 +271,14 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
         }
     }
 
+    // 最小的超时时间
     _minTimeout = pCommunicator->getMinTimeout();
     if(_minTimeout < 1)
     {
         _minTimeout = 1;
     }
+
+    // 获取配置文件
     // get AK/SK
     const TC_Config& conf = Application::getConfig();
     vector<string> adapterNames;
@@ -741,6 +748,7 @@ void ServantProxy::tars_invoke_async(char  cPacketType,
     invoke(msg, bCoro);
 }
 
+    // 同步调用
 void ServantProxy::tars_invoke(char  cPacketType,
                               const string& sFuncName,
                               const vector<char>& buf,
@@ -748,6 +756,7 @@ void ServantProxy::tars_invoke(char  cPacketType,
                               const map<string, string>& status,
                               ResponsePacket& rsp)
 {
+    // 填充msg
     ReqMessage * msg = new ReqMessage();
 
     msg->init(ReqMessage::SYNC_CALL,NULL,sFuncName);
@@ -770,9 +779,9 @@ void ServantProxy::tars_invoke(char  cPacketType,
 
 
     checkDye(msg->request);
-
+    // 调用
     invoke(msg);
-
+    // 回复
     rsp = msg->response;
 
     delete msg;

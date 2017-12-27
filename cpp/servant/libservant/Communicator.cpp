@@ -90,7 +90,7 @@ void Communicator::setProperty(TC_Config& conf, const string& domain/* = CONFIG_
 
 void Communicator::initClientConfig()
 {
-    // 判断配置文件中是否打开了set
+    // 判断是否打开了set 默认为否
     ClientConfig::SetOpen = TC_Common::lower(getProperty("enableset", "n"))=="y"?true:false;
 
     if (ClientConfig::SetOpen)
@@ -112,7 +112,7 @@ void Communicator::initClientConfig()
             TLOGERROR( "[TARS][set division name error:" << ClientConfig::SetDivision << ", client failed to open set]" << endl);
         }
     }
-
+    // 本地IP 默认为空
     ClientConfig::LocalIp = getProperty("localip", "");
     if (ClientConfig::SetLocalIp.empty())
     {
@@ -142,7 +142,7 @@ void Communicator::initClientConfig()
         exe = ClientConfig::LocalIp;
     }
 
-    // 客户端模块的名称
+    // 客户端模块的名称 默认为进程名
     ClientConfig::ModuleName = getProperty("modulename", exe);
 }
 
@@ -248,9 +248,8 @@ void Communicator::initialize()
     _servantProxyFactory = new ServantProxyFactory(this);
 
 
-    //客户端网络线程
+    //客户端网络线程 默认为1 最大线程数为64
     _clientThreadNum = TC_Common::strto<size_t>(getProperty("netthread","1"));
-
     if(0 == _clientThreadNum)
     {
         _clientThreadNum = 1;
@@ -260,13 +259,14 @@ void Communicator::initialize()
         _clientThreadNum = MAX_CLIENT_THREAD_NUM;
     }
 
-    //stat总是有对象, 保证getStat返回的对象总是有效
+    // 上报类 stat总是有对象, 保证getStat返回的对象总是有效
     _statReport = new StatReport(_clientThreadNum);
 
     for(size_t i = 0; i < _clientThreadNum; ++i)
     {
-        // 创建_communicatorEpoll 客户端网络处理的线程类
+        // 根据线程数创建多个_communicatorEpoll 客户端网络处理的线程类
         _communicatorEpoll[i] = new CommunicatorEpoll(this, i);
+        // start为tc_thread中的start 实际执行的是子类的run方法
         _communicatorEpoll[i]->start();
     }
 
@@ -354,9 +354,10 @@ void Communicator::terminate()
     }
 
 }
-
+    // 获取通用的ServantProxy对象
 ServantProxy * Communicator::getServantProxy(const string& objectName,const string& setName)
 {
+    // 在第一次调用getServantProxy时需要初始化
     Communicator::initialize();
 
     return _servantProxyFactory->getServantProxy(objectName,setName);

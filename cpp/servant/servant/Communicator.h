@@ -98,6 +98,7 @@ public:
      * @param setName 指定set调用的setid
      * @return T
      */
+// setName默认为空
     template<class T> T stringToProxy(const string& objectName,const string& setName="")
     {
         T prx = NULL;
@@ -116,6 +117,7 @@ public:
      */
     template<class T> void stringToProxy(const string& objectName, T& proxy,const string& setName="")
     {
+        // setName默认为空
         ServantProxy * pServantProxy = getServantProxy(objectName,setName);
         // 强转为对应类型的代理
         proxy = (typename T::element_type*)(pServantProxy);

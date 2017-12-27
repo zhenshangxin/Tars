@@ -47,7 +47,7 @@ CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThre
     //ObjectProxyFactory 对象
     _objectProxyFactory = new ObjectProxyFactory(this);
 
-    //异步线程数
+    //异步回调的线程数 默认为3 最大为1024
     _asyncThreadNum = TC_Common::strto<size_t>(pCommunicator->getProperty("asyncthread", "3"));
 
     if(_asyncThreadNum == 0)
@@ -445,6 +445,7 @@ void CommunicatorEpoll::pushAsyncThreadQueue(ReqMessage * msg)
     }
 }
 
+    // 新线程
 void CommunicatorEpoll::run()
 {
     TLOGDEBUG("CommunicatorEpoll::run id:"<<syscall(SYS_gettid)<<endl);

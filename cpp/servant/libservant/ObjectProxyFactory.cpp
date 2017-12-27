@@ -37,21 +37,25 @@ ObjectProxyFactory::~ObjectProxyFactory()
     }
 }
 
+    // setName默认为空
 ObjectProxy * ObjectProxyFactory::getObjectProxy(const string& sObjectProxyName,const string& setName)
 {
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
     string tmpObjName = sObjectProxyName + ":" + setName;
+    // 找到相应名字的objectProxy 找到就返回
     map<string, ObjectProxy*>::iterator it = _objectProxys.find(tmpObjName);
     if(it != _objectProxys.end())
     {
         return it->second;
     }
 
+    // 没找到就新建一个 返回
     ObjectProxy * pObjectProxy = new ObjectProxy(_communicatorEpoll, sObjectProxyName,setName);
 
     pObjectProxy->initialize();
 
+    // 加入_objectProxys中
     _objectProxys[tmpObjName] = pObjectProxy;
     //_objectProxys.insert(make_pair<string,ObjectProxy*>(tmpObjName,pObjectProxy));
 
