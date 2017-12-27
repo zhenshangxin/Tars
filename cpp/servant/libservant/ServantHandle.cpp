@@ -29,6 +29,7 @@ namespace tars
 /////////////////////////////////////////////////////////////////////////
 //
 ServantHandle::ServantHandle()
+// 协程调度器
 : _coroSched(NULL)
 {
     
@@ -62,6 +63,7 @@ ServantHandle::~ServantHandle()
     }
 }
 
+    // 开始
 void ServantHandle::run()
 {
     initialize();
@@ -380,14 +382,17 @@ void ServantHandle::initialize()
 {
     map<string, TC_EpollServer::BindAdapterPtr>::iterator adpit;
 
+    // 遍历所属handleGroup中的所有adapter
     map<string, TC_EpollServer::BindAdapterPtr>& adapters = _handleGroup->adapters;
 
     for (adpit = adapters.begin(); adpit != adapters.end(); ++adpit)
     {
+
         ServantPtr servant = ServantHelperManager::getInstance()->create(adpit->first);
 
         if (servant)
         {
+            // 放入_servants 中
             _servants[servant->getName()] = servant;
         }
         else
@@ -411,8 +416,9 @@ void ServantHandle::initialize()
     {
         try
         {
+            // 为servant 设置Handle
             it->second->setHandle(this);
-
+            // 初始化servant
             it->second->initialize();
 
             TLOGINFO("[TARS][" << it->second->getName() << "] initialize" << endl);

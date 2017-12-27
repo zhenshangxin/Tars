@@ -90,6 +90,7 @@ void TC_Thread::threadEntry(TC_Thread *pThread)
 
     try
     {
+        // servantHandle中的run
         pThread->run();
     }
     catch(...)
@@ -104,11 +105,12 @@ TC_ThreadControl TC_Thread::start()
 {
     TC_ThreadLock::Lock sync(_lock);
 
+    // 如果正在运行
     if(_running)
     {
         throw TC_ThreadThreadControl_Exception("[TC_Thread::start] thread has start");
     }
-
+    // 新建一个线程
     int ret = pthread_create(&_tid,
                    0,
                    (void *(*)(void *))&threadEntry,

@@ -1573,14 +1573,14 @@ int  TC_EpollServer::NetThread::getEmptyConnTimeout() const
     return _iEmptyCheckTimeout;
 }
 
+// 新建一个socket与adapter中的地址绑定  加入到_listeners中
 int  TC_EpollServer::NetThread::bind(BindAdapterPtr &lsPtr)
 {
     // 遍历监听socket与adapter的数组
     map<int, BindAdapterPtr>::iterator it = _listeners.begin();
-    // 若是找到了
     while (it != _listeners.end())
     {
-        // adapter的名字相同 报错
+        // 若adapter的名字相同 则报错
         if(it->second->getName() == lsPtr->getName())
         {
             throw TC_Exception("bind name '" + lsPtr->getName() + "' conflicts.");
@@ -1664,7 +1664,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 
         //创建epoll
         _epoller.create(10240);
-
+        // 添加两个描述符
         _epoller.add(_shutdown.getfd(), H64(ET_CLOSE), EPOLLIN);
         _epoller.add(_notify.getfd(), H64(ET_NOTIFY), EPOLLIN);
 
@@ -1679,7 +1679,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
             {
                 //获取最大连接数
                 maxAllConn += it->second->getMaxConns();
-
+                // 添加要监听的socket
                 _epoller.add(it->first, H64(ET_LISTEN) | it->first, EPOLLIN);
             }
             else
@@ -2308,14 +2308,16 @@ void TC_EpollServer::startHandle()
 
         map<string, TC_EpollServer::HandleGroupPtr>::iterator it;
 
+        // 遍历handleGroups
         for (it = _handleGroups.begin(); it != _handleGroups.end(); ++it)
         {
             vector<TC_EpollServer::HandlePtr>& hds = it->second->handles;
-
+            // 遍历handles
             for (uint32_t i = 0; i < hds.size(); ++i)
             {
                 if (!hds[i]->isAlive())
                 {
+                    // 启动线程
                     hds[i]->start();
                 }
             }

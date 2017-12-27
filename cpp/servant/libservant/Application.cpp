@@ -607,7 +607,7 @@ void Application::main(int argc, char *argv[])
 
         vector<TC_EpollServer::BindAdapterPtr> adapters;
 
-        //绑定对象和端口
+        //绑定对象和端口 返回新创建的adapter
         bindAdapter(adapters);
 
         //业务应用的初始化 比如LSDeviceTCPGateWay对象的初始化
@@ -617,15 +617,17 @@ void Application::main(int argc, char *argv[])
         outAllAdapter(cout);
 
         // 遍历adapters的vector
-        //设置HandleGroup分组，启动线程
+        // 设置HandleGroup分组，启动线程
         for (size_t i = 0; i < adapters.size(); ++i)
         {
             string name = adapters[i]->getName();
 
             string groupName = adapters[i]->getHandleGroupName();
 
+            // 说明配置了handlegroup这一项
             if(name != groupName)
             {
+                // 获取对应的bindAdapter
                 TC_EpollServer::BindAdapterPtr ptr = _epollServer->getBindAdapter(groupName);
 
                 if (!ptr)
@@ -1176,7 +1178,7 @@ void Application::bindAdapter(vector<TC_EpollServer::BindAdapterPtr>& adapters)
                 // 设置解析协议的函数
                 bindAdapter->setProtocol(AppProtocol::parse);
             }
-            // 设置所属的handle组名
+            // 设置handleGroupName  若没有则默认为adapter的名字
             bindAdapter->setHandleGroupName(_conf.get(sLastPath + "<handlegroup>", adapterName[i]));
             // 设置handle的数目（线程数）
             bindAdapter->setHandleNum(TC_Common::strto<int>(_conf.get(sLastPath + "<threads>", "0")));

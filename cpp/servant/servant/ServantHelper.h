@@ -73,10 +73,11 @@ public:
     {
         if(check && _servant_adapter.end() == _servant_adapter.find(id))
         {
+            //若未在_servant_adapter找到此servant 报错
             cerr<<"[TARS]ServantHelperManager::addServant "<< id <<" not find adapter.(maybe not conf in the web)"<<endl;
             throw runtime_error("[TARS]ServantHelperManager::addServant " + id + " not find adapter.(maybe not conf in the web)");
         }
-        // 创建一个新的ServantCreation
+        // 找到了 创建一个新的ServantCreation
         _servant_creator[id] = new ServantCreation<T>();
     }
 

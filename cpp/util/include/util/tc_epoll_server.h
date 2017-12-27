@@ -669,6 +669,7 @@ public:
          */
         template<typename T> void setHandle()
         {
+            // 若未配置handlegroup 则此处为adapter的名字 _iHandleNum的数目为所配置的线程数
             _pEpollServer->setHandleGroup<T>(_handleGroupName, _iHandleNum, this);
         }
 
@@ -1643,33 +1644,39 @@ public:
      */
     template<class T> void setHandleGroup(const string& groupName, int32_t handleNum, BindAdapterPtr adapter)
     {
+        // 根据groupName来查找
         map<string, HandleGroupPtr>::iterator it = _handleGroups.find(groupName);
 
+        // 若没有
         if (it == _handleGroups.end())
         {
+            // 新建一个HandleGroup      * 按name对handle分组 每组handle处理一个或多个Adapter消息 每个handle对象一个线程
             HandleGroupPtr hg = new HandleGroup();
 
             hg->name = groupName;
-
+            // 让adapter中的_handleGroup指向此group
             adapter->_handleGroup = hg;
 
             for (int32_t i = 0; i < handleNum; ++i)
             {
+                // 新建ServantHandle
                 HandlePtr handle = new T();
-
+                // 指向epoll Server
                 handle->setEpollServer(this);
-
+                // 指向handleGroup
                 handle->setHandleGroup(hg);
-
+                // 将handle放入handleGroup中
                 hg->handles.push_back(handle);
             }
 
+            // 在epoll server中添加对应的handle group项
             _handleGroups[groupName] = hg;
 
             it = _handleGroups.find(groupName);
         }
+        // 设置adapter
         it->second->adapters[adapter->getName()] = adapter;
-
+        // adapter指向group
         adapter->_handleGroup = it->second;
     }
 

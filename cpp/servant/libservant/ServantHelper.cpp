@@ -21,8 +21,10 @@ namespace tars
 
 ServantPtr ServantHelperManager::create(const string &sAdapter)
 {
+    // 若没有找到这个adapter
     if(_adapter_servant.find(sAdapter) == _adapter_servant.end())
     {
+        // 返回
         return NULL;
     }
 
@@ -30,9 +32,10 @@ ServantPtr ServantHelperManager::create(const string &sAdapter)
 
     //根据adapter查找servant名称
     string s = _adapter_servant[sAdapter];
-
+    // 找到对应的_servant_creator
     if(_servant_creator.find(s) != _servant_creator.end())
     {
+        // 创建servant 此处执行的是ServantHelper47行
         servant = _servant_creator[s]->create(s);
     }
     return servant;

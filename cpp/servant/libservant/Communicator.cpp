@@ -239,6 +239,7 @@ void Communicator::initialize()
 {
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
+    // 若初始化过了 直接返回
     if (_initialized)
         return;
 
@@ -264,6 +265,7 @@ void Communicator::initialize()
 
     for(size_t i = 0; i < _clientThreadNum; ++i)
     {
+        // 创建_communicatorEpoll 客户端网络处理的线程类
         _communicatorEpoll[i] = new CommunicatorEpoll(this, i);
         _communicatorEpoll[i]->start();
     }

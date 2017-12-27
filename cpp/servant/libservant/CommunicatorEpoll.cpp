@@ -38,6 +38,7 @@ CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThre
 , _waitTimeout(100)
 , _timeoutCheckInterval(100)
 {
+    // 生成epoll句柄
     _ep.create(1024);
 
     _shutdown.createSocket();

@@ -34,12 +34,14 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
     string tmpObjName = name + ":" + setName;
-
+    // 从已创建的对象中寻找
     map<string, ServantPrx>::iterator it = _servantProxy.find(tmpObjName);
+    // 找到就返回
     if(it != _servantProxy.end())
     {
         return it->second.get();
     }
+
 
     ObjectProxy ** ppObjectProxy = new ObjectProxy * [_comm->getClientThreadNum()];
     assert(ppObjectProxy != NULL);
@@ -48,7 +50,7 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
     {
         ppObjectProxy[i] = _comm->getCommunicatorEpoll(i)->getObjectProxy(name, setName);
     }
-
+    // 新建Servant
     ServantPrx sp = new ServantProxy(_comm, ppObjectProxy, _comm->getClientThreadNum());
 
     int syncTimeout  = TC_Common::strto<int>(_comm->getProperty("sync-invoke-timeout", "3000"));
@@ -60,7 +62,7 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
     sp->tars_connect_timeout(conTimeout);
 
     _servantProxy[tmpObjName] = sp;
-
+    // 返回
     return sp.get();
 }
 ///////////////////////////////////////////////////////////////////////////////

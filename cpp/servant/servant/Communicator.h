@@ -117,6 +117,7 @@ public:
     template<class T> void stringToProxy(const string& objectName, T& proxy,const string& setName="")
     {
         ServantProxy * pServantProxy = getServantProxy(objectName,setName);
+        // 强转为对应类型的代理
         proxy = (typename T::element_type*)(pServantProxy);
     }
 
