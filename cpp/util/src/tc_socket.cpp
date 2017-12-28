@@ -58,6 +58,7 @@ void TC_Socket::init(int fd, bool bOwner, int iDomain)
     _iDomain    = iDomain;
 }
 
+    // 默认创建一个tcpsocket
 void TC_Socket::createSocket(int iSocketType, int iDomain)
 {
     assert(iSocketType == SOCK_STREAM || iSocketType == SOCK_DGRAM);

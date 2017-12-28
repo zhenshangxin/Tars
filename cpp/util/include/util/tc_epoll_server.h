@@ -670,6 +670,7 @@ public:
         template<typename T> void setHandle()
         {
             // 若未配置handlegroup 则此处为adapter的名字 _iHandleNum的数目为所配置的线程数
+            // 配置handlegroup
             _pEpollServer->setHandleGroup<T>(_handleGroupName, _iHandleNum, this);
         }
 
@@ -1644,7 +1645,7 @@ public:
      */
     template<class T> void setHandleGroup(const string& groupName, int32_t handleNum, BindAdapterPtr adapter)
     {
-        // 根据groupName来查找
+        // 根据groupName来查找 若找到了就直接使用这个handleGroup(此时有多个adapter配置的handleGroup是相同的 一个HandleGroup处理多个adapter handleGroup的线程数由第一个adapter来决定)
         map<string, HandleGroupPtr>::iterator it = _handleGroups.find(groupName);
 
         // 若没有

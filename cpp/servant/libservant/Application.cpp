@@ -607,7 +607,7 @@ void Application::main(int argc, char *argv[])
 
         vector<TC_EpollServer::BindAdapterPtr> adapters;
 
-        //绑定对象和端口 返回新创建的adapter
+        //绑定配置文件中配置的adapter与servant
         bindAdapter(adapters);
 
         //业务应用的初始化 比如LSDeviceTCPGateWay对象的初始化
@@ -616,7 +616,7 @@ void Application::main(int argc, char *argv[])
         //输出所有adapter
         outAllAdapter(cout);
 
-        // 遍历adapters的vector
+        // 遍历adapters的vector 为adapter设置handle
         // 设置HandleGroup分组，启动线程
         for (size_t i = 0; i < adapters.size(); ++i)
         {
@@ -624,14 +624,15 @@ void Application::main(int argc, char *argv[])
 
             string groupName = adapters[i]->getHandleGroupName();
 
-            // 说明配置了handlegroup这一项
+
+            // 若名称与handleGroup不同 适用于一个handlegroup处理多个adapter的情况
             if(name != groupName)
             {
-                // 获取对应的bindAdapter
                 TC_EpollServer::BindAdapterPtr ptr = _epollServer->getBindAdapter(groupName);
 
                 if (!ptr)
                 {
+                    // 若无与此handlegroup名相同的adapter
                     throw runtime_error("[TARS][adater `" + name + "` setHandle to group `" + groupName + "` fail!");
                 }
 
@@ -936,11 +937,11 @@ void Application::initializeServer()
 
     //网络线程的配置数目不能15个
     if(iNetThreadNum > 15)
-    {    
+    {
         iNetThreadNum = 15;
         cout << OUT_LINE << "\nwarning:netThreadNum > 15." << endl;
     }
-    // 服务
+    // 新建一个epollserver
     _epollServer = new TC_EpollServer(iNetThreadNum);
 
     //网络线程的内存池配置
@@ -1010,7 +1011,7 @@ void Application::initializeServer()
     cout << OUT_LINE << "\n" << outfill("[set admin adapter]") << "OK" << endl;
 
 
-    // 其他服务与本地的RPC接口之间的socket信息 如（tcp -h 127.0.0.1 -p 20202 -t 3000）
+    // 本地的RPC接口的socket信息 如（tcp -h 127.0.0.1 -p 20202 -t 3000）
     if(!ServerConfig::Local.empty())
     {
         // 添加一个AdminServant

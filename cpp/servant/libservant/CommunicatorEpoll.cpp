@@ -32,6 +32,7 @@ CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThre
 , _objectProxyFactory(NULL)
 , _asyncThreadNum(3)
 , _asyncSeq(0)
+  // 第几个网络线程
 , _netThreadSeq(netThreadSeq)
 , _reportAsyncQueue(NULL)
 , _noSendQueueLimit(1000)
@@ -41,10 +42,12 @@ CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThre
     // 生成epoll句柄
     _ep.create(1024);
 
+    // 用来通知线程关闭的socket
     _shutdown.createSocket();
+    // 将_shutdown的读事件注册
     _ep.add(_shutdown.getfd(), 0, EPOLLIN);
 
-    //ObjectProxyFactory 对象
+    //ObjectProxyFactory对象 用于获取ObjectProxy
     _objectProxyFactory = new ObjectProxyFactory(this);
 
     //异步回调的线程数 默认为3 最大为1024
@@ -137,7 +140,7 @@ CommunicatorEpoll::~CommunicatorEpoll()
 void CommunicatorEpoll::terminate()
 {
     _terminate = true;
-    //通知epoll响应
+    //将_shutdown注册的事件改为写事件
     _ep.mod(_shutdown.getfd(), 0, EPOLLOUT);
 }
 

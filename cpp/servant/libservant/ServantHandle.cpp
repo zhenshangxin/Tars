@@ -378,6 +378,7 @@ bool ServantHandle::allFilterIsEmpty()
     return true;
 }
 
+    // 初始化servant
 void ServantHandle::initialize()
 {
     map<string, TC_EpollServer::BindAdapterPtr>::iterator adpit;
@@ -388,6 +389,7 @@ void ServantHandle::initialize()
     for (adpit = adapters.begin(); adpit != adapters.end(); ++adpit)
     {
 
+        // 创建servant对象
         ServantPtr servant = ServantHelperManager::getInstance()->create(adpit->first);
 
         if (servant)
@@ -400,7 +402,7 @@ void ServantHandle::initialize()
             TLOGERROR("[TARS]ServantHandle initialize createServant ret null, for adapter `" + adpit->first + "`" << endl);
         }
     }
-
+    // 若map为空
     map<string, ServantPtr>::iterator it = _servants.begin();
 
     if(it == _servants.end())

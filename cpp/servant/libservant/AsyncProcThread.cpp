@@ -27,6 +27,7 @@ AsyncProcThread::AsyncProcThread(size_t iQueueCap)
 : _terminate(false)
 {
     // 异步队列大小为10000
+    // 循环队列
      _msgQueue = new ReqInfoQueue(iQueueCap);
 }
 
@@ -82,6 +83,7 @@ void AsyncProcThread::run()
 
         if (_msgQueue->pop_front(msg))
         {
+            // 取出第一个ReqMessage
             //从回调对象把线程私有数据传递到回调线程中
             ServantProxyThreadData * pServantProxyThreadData = ServantProxyThreadData::getData();
             assert(pServantProxyThreadData != NULL);

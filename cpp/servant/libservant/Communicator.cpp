@@ -73,10 +73,11 @@ void Communicator::setProperty(TC_Config& conf, const string& domain/* = CONFIG_
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
     // 获取域下面的参数值对 放到_properties中去 CONFIG_ROOT_PATH默认为/tars/application/client
+    // 配置文件中的所有配置都在此读取
     conf.getDomainMap(domain, _properties);
 
+    // 如果application域下面有 enableset 或 setdivision的值为默认值（或没有值）
     string defaultValue = "dft";
-    // 如果enableset 或 setdivision的值为默认值（或没有值）
     if ((defaultValue == getProperty("enableset", defaultValue))
             || (defaultValue == getProperty("setdivision", defaultValue)))
     {
@@ -85,6 +86,7 @@ void Communicator::setProperty(TC_Config& conf, const string& domain/* = CONFIG_
         _properties["setdivision"] = conf.get("/tars/application<setdivision>", "NULL");
     }
 
+    // 由_properties初始化Communicator的配置 此部分包含IP 进程名等
     initClientConfig();
 }
 
@@ -188,6 +190,7 @@ void Communicator::reloadLocator()
     // 重新加载属性
 int Communicator::reloadProperty(string & sResult)
 {
+    // 第一次调用时还未初始化 _clientThreadNum为0
     for(size_t i = 0; i < _clientThreadNum; ++i)
     {
         _communicatorEpoll[i]->getObjectProxyFactory()->loadObjectLocator();
@@ -202,11 +205,12 @@ int Communicator::reloadProperty(string & sResult)
     int iMaxSampleCount = TC_Common::strto<int>(getProperty("max-sample-count", "100"));
 
     int iMaxReportSize = TC_Common::strto<int>(getProperty("max-report-size", "1400"));
-
+    // 数据统计的地址 见Introduction.md
     string statObj = getProperty("stat", "");
-
+    // 属性统计的地址
     string propertyObj = getProperty("property", "");
 
+    // 数据统计代理
     StatFPrx statPrx = NULL;
 
     if (!statObj.empty())
@@ -214,6 +218,7 @@ int Communicator::reloadProperty(string & sResult)
         statPrx = stringToProxy<StatFPrx>(statObj);
     }
 
+    // 属性统计代理
     PropertyFPrx propertyPrx = NULL;
 
     if (!propertyObj.empty())
@@ -224,6 +229,7 @@ int Communicator::reloadProperty(string & sResult)
     string sSetDivision = ClientConfig::SetOpen?ClientConfig::SetDivision:"";
     _statReport->setReportInfo(statPrx, propertyPrx, ClientConfig::ModuleName, ClientConfig::LocalIp, sSetDivision, iReportInterval, iSampleRate, iMaxSampleCount, iMaxReportSize, iReportTimeout);
 
+    // 结果
     sResult = "locator=" + getProperty("locator", "") + "\r\n" +
         "stat=" + statObj + "\r\n" + "property=" + propertyObj + "\r\n" +
         "SetDivision=" + sSetDivision + "\r\n" +
@@ -293,13 +299,14 @@ void Communicator::initialize()
     if(_minTimeout < 1)
         _minTimeout = 1;
 
+    // 数据统计服务
     StatFPrx statPrx = NULL;
     if (!statObj.empty())
     {
         statPrx = stringToProxy<StatFPrx>(statObj);
     }
 
-    //上报Property信息的代理
+    //属性统计服务
     PropertyFPrx propertyPrx = NULL;
     if (!propertyObj.empty())
     {

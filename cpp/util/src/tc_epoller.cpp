@@ -44,10 +44,13 @@ TC_Epoller::~TC_Epoller()
 
 void TC_Epoller::ctrl(int fd, long long data, __uint32_t events, int op)
 {
+
     struct epoll_event ev;
     ev.data.u64 = data;
+
     if(_et)
     {
+        // 边缘触发
         ev.events   = events | EPOLLET;
     }
     else
@@ -61,14 +64,15 @@ void TC_Epoller::ctrl(int fd, long long data, __uint32_t events, int op)
 void TC_Epoller::create(int max_connections)
 {
     _max_connections = max_connections;
-
+    // 在epoll_create中设置此值无意义
     _iEpollfd = epoll_create(_max_connections + 1);
 
+    // 清空事件集
     if(_pevs != NULL)
     {
         delete[] _pevs;
     }
-
+    // 新建事件集
     _pevs = new epoll_event[_max_connections + 1];
 }
 

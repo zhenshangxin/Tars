@@ -1508,7 +1508,7 @@ TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
   // 内存池
 , _bufferPool(NULL)
 {
-    // tc_socket对象
+    // tc_socket对象 开启两个tcpsocket
     _shutdown.createSocket();
     _notify.createSocket();
 }
@@ -1616,6 +1616,7 @@ TC_EpollServer::BindAdapterPtr TC_EpollServer::NetThread::getBindAdapter(const s
     return NULL;
 }
 
+    // 创建socket 绑定地址 开始监听
 void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 {
     int type = ep.isUnixLocal()?AF_LOCAL:AF_INET;
@@ -1653,6 +1654,7 @@ void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 
 void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 {
+    // 只调用第一个
     if(!_createEpoll)
     {
         _createEpoll = true;
@@ -2278,7 +2280,7 @@ int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
         }
         else
         {
-            //当网络线程中listeners没有监听socket时，list使用adapter中设置的最大连接数作为初始化
+            //当网络线程中listeners没有监听socket时，list使用adapter中设置的最大连接数（累加的）
             _netThreads[i]->setListSize(lsPtr->getMaxConns());
         }
     }

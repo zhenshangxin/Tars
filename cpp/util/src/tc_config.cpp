@@ -596,6 +596,7 @@ string TC_Config::get(const string &sName, const string &sDefault) const
     }
 }
 
+    // 获取域下面的参数值对 放入map中
 bool TC_Config::getDomainMap(const string &path, map<string, string> &m) const
 {
     TC_ConfigDomain::DomainPath dp = TC_ConfigDomain::parseDomainName(path, false);
