@@ -1654,7 +1654,7 @@ void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 
 void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 {
-    // 只调用第一个
+    // 每个NetThread只调用一次
     if(!_createEpoll)
     {
         _createEpoll = true;
@@ -1666,7 +1666,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 
         //创建epoll
         _epoller.create(10240);
-        // 添加两个描述符
+        // 添加两个描述符 监听他们的读操作
         _epoller.add(_shutdown.getfd(), H64(ET_CLOSE), EPOLLIN);
         _epoller.add(_notify.getfd(), H64(ET_NOTIFY), EPOLLIN);
 
@@ -1699,6 +1699,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
             maxAllConn = _listSize;
         }
 
+        // 最大连接数不能超过这么多 （所有的adapter加在一起）
         if(maxAllConn >= (1 << 22))
         {
             error("createEpoll connection num: " + TC_Common::tostr(maxAllConn) + " >= " + TC_Common::tostr(1 << 22));

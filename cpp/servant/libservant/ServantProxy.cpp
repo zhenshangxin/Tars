@@ -251,7 +251,7 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
 , _queueSize(1000)
 , _minTimeout(100)
 {
-
+    // 对外获取路由请求的封装类
     _endpointInfo = new EndpointManagerThread(pCommunicator, (*_objectProxy)->name());
 
 
@@ -263,7 +263,7 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
 
     if(pCommunicator)
     {
-        // 设置请求队列的大小
+        // 设置请求队列的大小 默认为1000
         _queueSize =  TC_Common::strto<int>(pCommunicator->getProperty("reqqueuenum", "1000"));
         if(_queueSize < 1000)
         {
@@ -282,7 +282,8 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
     // get AK/SK
     const TC_Config& conf = Application::getConfig();
     vector<string> adapterNames;
-             
+
+    // （鉴权功能）
     if (conf.getDomainVector("/tars/application/client", adapterNames))
     {
         vector<string>::const_iterator it = std::find(adapterNames.begin(), adapterNames.end(), tars_name());

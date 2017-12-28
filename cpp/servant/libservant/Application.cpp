@@ -108,6 +108,7 @@ void Application::waitForQuit()
     int64_t iLastCheckTime = TNOW;
     int64_t iNow = iLastCheckTime;
 
+    // 在此处启动Server中的网络线程
     unsigned int iNetThreadNum = _epollServer->getNetThreadNum();
     vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
 
@@ -623,7 +624,6 @@ void Application::main(int argc, char *argv[])
             string name = adapters[i]->getName();
 
             string groupName = adapters[i]->getHandleGroupName();
-
 
             // 若名称与handleGroup不同 适用于一个handlegroup处理多个adapter的情况
             if(name != groupName)

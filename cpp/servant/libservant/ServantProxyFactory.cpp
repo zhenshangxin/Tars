@@ -43,15 +43,16 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
         return it->second.get();
     }
 
-    // 根据线程数来创建对应数量的ObjectProxy
+    // 根据网络线程数来创建对应数量的ObjectProxy
     ObjectProxy ** ppObjectProxy = new ObjectProxy * [_comm->getClientThreadNum()];
     assert(ppObjectProxy != NULL);
 
     for(size_t i = 0; i < _comm->getClientThreadNum(); ++i)
     {
+        //获取每个CommunicatorEpoll（客户网络线程）的代理对象
         ppObjectProxy[i] = _comm->getCommunicatorEpoll(i)->getObjectProxy(name, setName);
     }
-    // 新建Servant
+    // 新建Servant代理
     ServantPrx sp = new ServantProxy(_comm, ppObjectProxy, _comm->getClientThreadNum());
 
     int syncTimeout  = TC_Common::strto<int>(_comm->getProperty("sync-invoke-timeout", "3000"));
