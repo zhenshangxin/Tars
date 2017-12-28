@@ -191,6 +191,7 @@ namespace LSFreeIP
     };
     typedef tars::TC_AutoPtr<MServiceDeviceTCPGWPrxCallback> MServiceDeviceTCPGWPrxCallbackPtr;
 
+    // promise异步
     /* callback of promise async proxy for client */
     class MServiceDeviceTCPGWPrxCallbackPromise: public tars::ServantProxyCallback
     {
@@ -498,6 +499,7 @@ namespace LSFreeIP
     };
     typedef tars::TC_AutoPtr<MServiceDeviceTCPGWPrxCallbackPromise> MServiceDeviceTCPGWPrxCallbackPromisePtr;
 
+    // 协程异步
     /* callback of coroutine async proxy for client */
     class MServiceDeviceTCPGWCoroPrxCallback: public MServiceDeviceTCPGWPrxCallback
     {
@@ -688,69 +690,31 @@ namespace LSFreeIP
     };
     typedef tars::TC_AutoPtr<MServiceDeviceTCPGWCoroPrxCallback> MServiceDeviceTCPGWCoroPrxCallbackPtr;
 
+
+    // 客户端的proxy
     /* proxy for client */
     class MServiceDeviceTCPGWProxy : public tars::ServantProxy
     {
     public:
         typedef map<string, string> TARS_CONTEXT;
-        tars::Int32 RPCGetDevicesList(vector<Base::ClientInfo> &clis,const map<string, string> &context = TARS_CONTEXT(),map<string, string> * pResponseContext = NULL)
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(clis, 1);
-            tars::ResponsePacket rep;
-            std::map<string, string> _mStatus;
-            tars_invoke(tars::TARSNORMAL,"RPCGetDevicesList", _os.getByteBuffer(), context, _mStatus, rep);
-            if(pResponseContext)
-            {
-                *pResponseContext = rep.context;
-            }
 
-            tars::TarsInputStream<tars::BufferReader> _is;
-            _is.setBuffer(rep.sBuffer);
-            tars::Int32 _ret;
-            _is.read(_ret, 0, true);
-            _is.read(clis, 1, true);
-            return _ret;
-        }
-
-        void async_RPCGetDevicesList(MServiceDeviceTCPGWPrxCallbackPtr callback,const map<string, string>& context = TARS_CONTEXT())
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCGetDevicesList", _os.getByteBuffer(), context, _mStatus, callback);
-        }
-        
-        promise::Future< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCGetDevicesListPtr > promise_async_RPCGetDevicesList(const map<string, string>& context)
-        {
-            promise::Promise< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCGetDevicesListPtr > promise;
-            MServiceDeviceTCPGWPrxCallbackPromisePtr callback = new MServiceDeviceTCPGWPrxCallbackPromise(promise);
-
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCGetDevicesList", _os.getByteBuffer(), context, _mStatus, callback);
-
-            return promise.getFuture();
-        }
-
-        void coro_RPCGetDevicesList(MServiceDeviceTCPGWCoroPrxCallbackPtr callback,const map<string, string>& context = TARS_CONTEXT())
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCGetDevicesList", _os.getByteBuffer(), context, _mStatus, callback, true);
-        }
-
+        // 同步 这个context在调用的时候并没有传入 初始化一个map<string, string>的map 作为context
         tars::Int32 RPCGetEndPointInfo(std::string &sRsp,const map<string, string> &context = TARS_CONTEXT(),map<string, string> * pResponseContext = NULL)
         {
             tars::TarsOutputStream<tars::BufferWriter> _os;
+            // 写入sRsp
             _os.write(sRsp, 1);
+            // 由RequestF.tars编译得出
             tars::ResponsePacket rep;
             std::map<string, string> _mStatus;
+            //调用
             tars_invoke(tars::TARSNORMAL,"RPCGetEndPointInfo", _os.getByteBuffer(), context, _mStatus, rep);
             if(pResponseContext)
             {
                 *pResponseContext = rep.context;
             }
 
+            // 解析回复
             tars::TarsInputStream<tars::BufferReader> _is;
             _is.setBuffer(rep.sBuffer);
             tars::Int32 _ret;
@@ -759,13 +723,15 @@ namespace LSFreeIP
             return _ret;
         }
 
+        // 异步
         void async_RPCGetEndPointInfo(MServiceDeviceTCPGWPrxCallbackPtr callback,const map<string, string>& context = TARS_CONTEXT())
         {
             tars::TarsOutputStream<tars::BufferWriter> _os;
             std::map<string, string> _mStatus;
             tars_invoke_async(tars::TARSNORMAL,"RPCGetEndPointInfo", _os.getByteBuffer(), context, _mStatus, callback);
         }
-        
+
+        // promise异步
         promise::Future< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCGetEndPointInfoPtr > promise_async_RPCGetEndPointInfo(const map<string, string>& context)
         {
             promise::Promise< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCGetEndPointInfoPtr > promise;
@@ -778,119 +744,12 @@ namespace LSFreeIP
             return promise.getFuture();
         }
 
+        // 协程异步
         void coro_RPCGetEndPointInfo(MServiceDeviceTCPGWCoroPrxCallbackPtr callback,const map<string, string>& context = TARS_CONTEXT())
         {
             tars::TarsOutputStream<tars::BufferWriter> _os;
             std::map<string, string> _mStatus;
             tars_invoke_async(tars::TARSNORMAL,"RPCGetEndPointInfo", _os.getByteBuffer(), context, _mStatus, callback, true);
-        }
-
-        tars::Int32 RPCGetRedirectionURL(const std::string & index,tars::Int32 indexType,const std::string & URLType,Base::CommonResponse &sOut,const map<string, string> &context = TARS_CONTEXT(),map<string, string> * pResponseContext = NULL)
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(index, 1);
-            _os.write(indexType, 2);
-            _os.write(URLType, 3);
-            _os.write(sOut, 4);
-            tars::ResponsePacket rep;
-            std::map<string, string> _mStatus;
-            tars_invoke(tars::TARSNORMAL,"RPCGetRedirectionURL", _os.getByteBuffer(), context, _mStatus, rep);
-            if(pResponseContext)
-            {
-                *pResponseContext = rep.context;
-            }
-
-            tars::TarsInputStream<tars::BufferReader> _is;
-            _is.setBuffer(rep.sBuffer);
-            tars::Int32 _ret;
-            _is.read(_ret, 0, true);
-            _is.read(sOut, 4, true);
-            return _ret;
-        }
-
-        void async_RPCGetRedirectionURL(MServiceDeviceTCPGWPrxCallbackPtr callback,const std::string &index,tars::Int32 indexType,const std::string &URLType,const map<string, string>& context = TARS_CONTEXT())
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(index, 1);
-            _os.write(indexType, 2);
-            _os.write(URLType, 3);
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCGetRedirectionURL", _os.getByteBuffer(), context, _mStatus, callback);
-        }
-        
-        promise::Future< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCGetRedirectionURLPtr > promise_async_RPCGetRedirectionURL(const std::string &index,tars::Int32 indexType,const std::string &URLType,const map<string, string>& context)
-        {
-            promise::Promise< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCGetRedirectionURLPtr > promise;
-            MServiceDeviceTCPGWPrxCallbackPromisePtr callback = new MServiceDeviceTCPGWPrxCallbackPromise(promise);
-
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(index, 1);
-            _os.write(indexType, 2);
-            _os.write(URLType, 3);
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCGetRedirectionURL", _os.getByteBuffer(), context, _mStatus, callback);
-
-            return promise.getFuture();
-        }
-
-        void coro_RPCGetRedirectionURL(MServiceDeviceTCPGWCoroPrxCallbackPtr callback,const std::string &index,tars::Int32 indexType,const std::string &URLType,const map<string, string>& context = TARS_CONTEXT())
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(index, 1);
-            _os.write(indexType, 2);
-            _os.write(URLType, 3);
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCGetRedirectionURL", _os.getByteBuffer(), context, _mStatus, callback, true);
-        }
-
-        tars::Int32 RPCTransMessage(const Base::PlatformMsg & sIn,Base::CommonResponse &sOut,const map<string, string> &context = TARS_CONTEXT(),map<string, string> * pResponseContext = NULL)
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(sIn, 1);
-            _os.write(sOut, 2);
-            tars::ResponsePacket rep;
-            std::map<string, string> _mStatus;
-            tars_invoke(tars::TARSNORMAL,"RPCTransMessage", _os.getByteBuffer(), context, _mStatus, rep);
-            if(pResponseContext)
-            {
-                *pResponseContext = rep.context;
-            }
-
-            tars::TarsInputStream<tars::BufferReader> _is;
-            _is.setBuffer(rep.sBuffer);
-            tars::Int32 _ret;
-            _is.read(_ret, 0, true);
-            _is.read(sOut, 2, true);
-            return _ret;
-        }
-
-        void async_RPCTransMessage(MServiceDeviceTCPGWPrxCallbackPtr callback,const Base::PlatformMsg &sIn,const map<string, string>& context = TARS_CONTEXT())
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(sIn, 1);
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCTransMessage", _os.getByteBuffer(), context, _mStatus, callback);
-        }
-        
-        promise::Future< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCTransMessagePtr > promise_async_RPCTransMessage(const Base::PlatformMsg &sIn,const map<string, string>& context)
-        {
-            promise::Promise< MServiceDeviceTCPGWPrxCallbackPromise::PromiseRPCTransMessagePtr > promise;
-            MServiceDeviceTCPGWPrxCallbackPromisePtr callback = new MServiceDeviceTCPGWPrxCallbackPromise(promise);
-
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(sIn, 1);
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCTransMessage", _os.getByteBuffer(), context, _mStatus, callback);
-
-            return promise.getFuture();
-        }
-
-        void coro_RPCTransMessage(MServiceDeviceTCPGWCoroPrxCallbackPtr callback,const Base::PlatformMsg &sIn,const map<string, string>& context = TARS_CONTEXT())
-        {
-            tars::TarsOutputStream<tars::BufferWriter> _os;
-            _os.write(sIn, 1);
-            std::map<string, string> _mStatus;
-            tars_invoke_async(tars::TARSNORMAL,"RPCTransMessage", _os.getByteBuffer(), context, _mStatus, callback, true);
         }
 
         MServiceDeviceTCPGWProxy* tars_hash(int64_t key)
@@ -911,6 +770,8 @@ namespace LSFreeIP
     };
     typedef tars::TC_AutoPtr<MServiceDeviceTCPGWProxy> MServiceDeviceTCPGWPrx;
 
+
+    // 服务端的servant
     /* servant for server */
     class MServiceDeviceTCPGW : public tars::Servant
     {

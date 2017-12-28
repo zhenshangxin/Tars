@@ -160,6 +160,9 @@ ServantProxyThreadData * ServantProxyThreadData::getData()
         TC_LockT<TC_ThreadMutex> lock(_mutex);
         if(_key == 0)
         {
+            // 创建一个与线程私有数据相关的键 用于访问线程私有数据
+            // key可以被每一个线程所使用 但是每个线程将这个键与不同的数据地址相关联 创建新键时 每个线程的数据地址设为空值
+            // destructor是与key关联的析构函数 当线程退出时 如果数据地址已被置为非空值 那么该析构函数就会被调用
             int iRet = ::pthread_key_create(&_key, ServantProxyThreadData::destructor);
 
             if (iRet != 0)
@@ -170,15 +173,18 @@ ServantProxyThreadData * ServantProxyThreadData::getData()
         }
     }
 
+    // 返回与线程相关的特定数据值 若没有特定数据值与其相关 那么返回NULL
     ServantProxyThreadData * pSptd = (ServantProxyThreadData*)pthread_getspecific(_key);
 
     if(!pSptd)
     {
+        // 若为空
         TC_LockT<TC_ThreadMutex> lock(_mutex);
-
+        // 新建一个ServantProxyThreadData
         pSptd = new ServantProxyThreadData();
+        // 请求事件通知的seq
         pSptd->_reqQNo = _pSeq->get();
-
+        // 设置与键相关联
         int iRet = pthread_setspecific(_key, (void *)pSptd);
 
         assert(iRet == 0);
@@ -502,13 +508,15 @@ void ServantProxy::tars_set_push_callback(const ServantProxyCallbackPtr & cb)
 
 void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
 {
+    // 调用的servantProxy对象 代表被调用服务的servant
     msg->proxy         = this;
+    // 先将结果设置为错误
     msg->response.iRet = TARSSERVERUNKNOWNERR;
 
-    //线程私有数据
+    //获取线程私有数据
     ServantProxyThreadData * pSptd = ServantProxyThreadData::getData();
     assert(pSptd != NULL);
-
+    // hash值
     msg->bHash         = pSptd->_hash;
     msg->bConHash      = pSptd->_conHash;
     msg->iHashCode     = pSptd->_hashCode;
@@ -518,7 +526,9 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
     pSptd->_conHash    = false;
 
     //染色需要透传
+    // 是否需要染色
     msg->bDyeing       = pSptd->_dyeing;
+    // 染色的key
     msg->sDyeingKey    = pSptd->_dyeingKey;
 
     if(msg->bDyeing)
@@ -564,8 +574,10 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
     assert(msg->pMonitor == NULL);
     if(msg->eType == ReqMessage::SYNC_CALL)
     {
+        //同步请求timewait是否结束
         msg->bMonitorFin = false;
 
+        // 协程调度
         if(pSptd->_sched)
         {
             msg->bCoroFlag = true;
@@ -577,7 +589,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
             msg->pMonitor = new ReqMonitor;
         }
     }
-
+    // 异步调用
     if(ReqMessage::ASYNC_CALL == msg->eType)
     {
         //是否是协程的并行请求
@@ -616,6 +628,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
     bool bEmpty = false;
     bool bSync  = (msg->eType == ReqMessage::SYNC_CALL);
 
+    // 加入队列
     if(!pReqQ->push_back(msg,bEmpty))
     {
         TLOGERROR("[TARS][ServantProxy::invoke msgQueue push_back error num:" << pSptd->_netSeq << "]" << endl);
@@ -760,16 +773,26 @@ void ServantProxy::tars_invoke(char  cPacketType,
     // 填充msg
     ReqMessage * msg = new ReqMessage();
 
+    // 调用方式 同步调用 objectProxy为空  sFuncName所调用的函数名
     msg->init(ReqMessage::SYNC_CALL,NULL,sFuncName);
 
-    msg->request.iVersion = TARSVERSION;
-    msg->request.cPacketType = cPacketType;
 
+    // 填充request.packet
+    // 版本
+    msg->request.iVersion = TARSVERSION;
+    //包类型
+    msg->request.cPacketType = cPacketType;
+    //obj的名称
     msg->request.sServantName = (*_objectProxy)->name();
+    // 函数名
     msg->request.sFuncName    = sFuncName;
+    // 发送的数据
     msg->request.sBuffer      = buf;
+    // context
     msg->request.context      = context;
+    // status
     msg->request.status       = status;
+    // 同步调用的超时
     msg->request.iTimeout     = _syncTimeout;
 
     // 在RequestPacket中的context设置主调信息
@@ -852,6 +875,7 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
         pSptd->_queueInit      = true;
     }
 
+    // 如果只有一个网络线程 那么就返回第一个
     if(_objectProxyNum == 1)
     {
         pObjProxy = *_objectProxy;
@@ -863,7 +887,7 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
         {
             //网络线程发起的请求
             assert(pSptd->_netThreadSeq < _objectProxyNum);
-
+            // 轮询来选择线程数
             pObjProxy = *(_objectProxy + pSptd->_netThreadSeq);
             pReqQ     = pSptd->_reqQueue[pSptd->_netThreadSeq];
         }
