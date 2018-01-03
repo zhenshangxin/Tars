@@ -102,7 +102,7 @@ public:
     template<class T> T stringToProxy(const string& objectName,const string& setName="")
     {
         T prx = NULL;
-
+        // obj名 例如cjm.LSDeviceTCPGateWay.MServiceDeviceTCPGWObj  setName为空
         stringToProxy<T>(objectName, prx,setName);
 
         return prx;

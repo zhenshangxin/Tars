@@ -1503,7 +1503,7 @@ public:
         TC_EpollServer            *_epollServer;
 
         /**
-         * 监听socket
+         * 监听socket socketfd 与BindAdapterPtr
          */
         map<int, BindAdapterPtr>    _listeners;
 

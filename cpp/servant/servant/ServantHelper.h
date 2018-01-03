@@ -78,6 +78,7 @@ public:
             throw runtime_error("[TARS]ServantHelperManager::addServant " + id + " not find adapter.(maybe not conf in the web)");
         }
         // 找到了 创建一个新的ServantCreation
+        // 用来创建servant
         _servant_creator[id] = new ServantCreation<T>();
     }
 

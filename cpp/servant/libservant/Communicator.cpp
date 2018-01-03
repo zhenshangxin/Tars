@@ -250,7 +250,7 @@ void Communicator::initialize()
         return;
 
     _initialized = true;
-
+    // 用来创建servantProxy
     _servantProxyFactory = new ServantProxyFactory(this);
 
 
@@ -366,7 +366,7 @@ ServantProxy * Communicator::getServantProxy(const string& objectName,const stri
 {
     // 在第一次调用getServantProxy时需要初始化
     Communicator::initialize();
-
+    // objectName cjmApp.LSDeviceTCPGateWay.MServiceDeviceTCPGWObj
     return _servantProxyFactory->getServantProxy(objectName,setName);
 }
 

@@ -50,6 +50,7 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
     for(size_t i = 0; i < _comm->getClientThreadNum(); ++i)
     {
         //获取每个CommunicatorEpoll（客户网络线程）的代理对象
+        // objectProxy的name就为cjm.LSPtoPLinkServer.MServicePtoPLinkObj
         ppObjectProxy[i] = _comm->getCommunicatorEpoll(i)->getObjectProxy(name, setName);
     }
     // 新建Servant代理

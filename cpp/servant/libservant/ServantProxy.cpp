@@ -101,9 +101,13 @@ ServantProxyThreadData::ServantProxyThreadData()
 , _reqQNo(0)
 , _netSeq(0)
 , _netThreadSeq(-1)
+  // 是否取模hash 默认为否
 , _hash(false)
+  // 是否一致性hash 默认为否
 , _conHash(false)
+  // hash值为-1
 , _hashCode(-1)
+  // 标识当前线程是否需要染色 默认为否
 , _dyeing(false)
 , _hasTimeout(false)
 , _timeout(0)
@@ -782,7 +786,7 @@ void ServantProxy::tars_invoke(char  cPacketType,
     msg->request.iVersion = TARSVERSION;
     //包类型
     msg->request.cPacketType = cPacketType;
-    //obj的名称
+    //要调用servant的名称
     msg->request.sServantName = (*_objectProxy)->name();
     // 函数名
     msg->request.sFuncName    = sFuncName;
@@ -866,8 +870,10 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
     //指针为空 就new一个
     if(!pSptd->_queueInit)
     {
+        // 若没有初始化
         for(size_t i=0;i<_objectProxyNum;++i)
         {
+            // 多个网络线程的队列
             pSptd->_reqQueue[i] = new ReqInfoQueue(_queueSize);
         }
         pSptd->_objectProxyNum = _objectProxyNum;
@@ -885,14 +891,14 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
     {
         if(pSptd->_netThreadSeq >= 0)
         {
-            //网络线程发起的请求
+            //网络线程发起的请求 回到自己的网络线程来处理
             assert(pSptd->_netThreadSeq < _objectProxyNum);
-            // 轮询来选择线程数
             pObjProxy = *(_objectProxy + pSptd->_netThreadSeq);
             pReqQ     = pSptd->_reqQueue[pSptd->_netThreadSeq];
         }
         else
         {
+            // 轮询选择
             //用线程的私有数据来保存选到的seq
             pObjProxy = *(_objectProxy + pSptd->_netSeq);
             pReqQ     = pSptd->_reqQueue[pSptd->_netSeq];

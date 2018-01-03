@@ -732,6 +732,7 @@ void TC_EpollServer::NetThread::Connection::close()
     }
 }
 
+    // 增加数据到队列中
 void TC_EpollServer::NetThread::Connection::insertRecvQueue(recv_queue::queue_type &vRecvData)
 {
     if(!vRecvData.empty())
@@ -758,6 +759,7 @@ void TC_EpollServer::NetThread::Connection::insertRecvQueue(recv_queue::queue_ty
             _pBindAdapter->insertRecvQueue(vRecvData,false);
         }
         else//接受队列满，需要丢弃
+            // todo : 此处应该加上提示
         {
             recv_queue::queue_type::iterator it = vRecvData.begin();
 
@@ -1345,6 +1347,7 @@ void TC_EpollServer::NetThread::ConnectionList::refresh(uint32_t uid, time_t iTi
     _vConn[uid].second = _tl.insert(make_pair(iTimeOutStamp, uid));
 }
 
+    // 检查超时数据
 void TC_EpollServer::NetThread::ConnectionList::checkTimeout(time_t iCurTime)
 {
     //至少1s才能检查一次
@@ -1352,16 +1355,17 @@ void TC_EpollServer::NetThread::ConnectionList::checkTimeout(time_t iCurTime)
     {
         return;
     }
-
+    // 获取当前时间
     _lastTimeoutTime = iCurTime;
 
     TC_ThreadLock::Lock lock(*this);
 
+    // 超时链表
     multimap<time_t, uint32_t>::iterator it = _tl.begin();
 
     while(it != _tl.end())
     {
-        //已经检查到当前时间点了, 后续不用在检查了
+        //已经检查到当前时间点了, 后了续不用在检查
         if(it->first > iCurTime)
         {
             break;
@@ -1384,7 +1388,7 @@ void TC_EpollServer::NetThread::ConnectionList::checkTimeout(time_t iCurTime)
         _del(uid);
     }
 
-
+    // 空连接检测
     if(_pEpollServer->IsEmptyConnCheck())
     {
         it = _tl.begin();
@@ -1746,6 +1750,7 @@ void TC_EpollServer::NetThread::terminate()
     _epoller.mod(_shutdown.getfd(), H64(ET_CLOSE), EPOLLOUT);
 }
 
+    // fd为监听socket
 bool TC_EpollServer::NetThread::accept(int fd)
 {
     struct sockaddr_in stSockAddr;
@@ -1753,18 +1758,19 @@ bool TC_EpollServer::NetThread::accept(int fd)
     socklen_t iSockAddrSize = sizeof(sockaddr_in);
 
     TC_Socket cs;
-
+    // 设置不拥有该fd
     cs.setOwner(false);
 
     //接收连接
     TC_Socket s;
-
+    // 用监听fd来初始化一个TC_Socket s
     s.init(fd, false, AF_INET);
-
+    // 接受连接 放到cd中
     int iRetCode = s.accept(cs, (struct sockaddr *) &stSockAddr, iSockAddrSize);
 
     if (iRetCode > 0)
     {
+        // 成功
         string  ip;
 
         uint16_t port;
@@ -1775,11 +1781,13 @@ bool TC_EpollServer::NetThread::accept(int fd)
 
         inet_ntop(AF_INET, &p->sin_addr, sAddr, sizeof(sAddr));
 
+        // 获取IP 端口
         ip      = sAddr;
         port    = ntohs(p->sin_port);
 
         debug("accept [" + ip + ":" + TC_Common::tostr(port) + "] [" + TC_Common::tostr(cs.getfd()) + "] incomming");
 
+        // ip是否被允许
         if(!_listeners[fd]->isIpAllow(ip))
         {
             debug("accept [" + ip + ":" + TC_Common::tostr(port) + "] [" + TC_Common::tostr(cs.getfd()) + "] not allowed");
@@ -1789,6 +1797,7 @@ bool TC_EpollServer::NetThread::accept(int fd)
             return true;
         }
 
+        // 是否超过了最大连接数
         if(_listeners[fd]->isLimitMaxConnection())
         {
             cs.close();
@@ -1804,7 +1813,7 @@ bool TC_EpollServer::NetThread::accept(int fd)
         cs.setCloseWaitDefault();
 
         int timeout = _listeners[fd]->getEndpoint().getTimeout()/1000;
-
+        // 新建一个connection对象
         Connection *cPtr = new Connection(_listeners[fd].get(), fd, (timeout < 2 ? 2 : timeout), cs.getfd(), ip, port);
 
         //过滤连接首个数据包包头
@@ -1830,10 +1839,11 @@ bool TC_EpollServer::NetThread::accept(int fd)
 
 void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Connection *cPtr)
 {
+    // 获取唯一的ID
     uint32_t uid = _list.getUniqId();
-
+    // 用唯一ID 来初始化
     cPtr->init(uid);
-
+    // 添加
     _list.add(cPtr, cPtr->getTimeout() + TNOW);
 
     cPtr->getBindAdapter()->increaseNowConnection();
@@ -2053,8 +2063,9 @@ void TC_EpollServer::NetThread::processPipe()
 
 void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 {
+    // 获取socketfd
     uint32_t uid = ev.data.u32;
-
+    // 根据socketfd来获取connection对象
     Connection *cPtr = getConnectionPtr(uid);
 
     if(!cPtr)
@@ -2065,6 +2076,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
     if (ev.events & EPOLLERR || ev.events & EPOLLHUP)
     {
+        // 出错 删除连接
         delConnection(cPtr,true,EM_SERVER_CLOSE);
 
         return;
@@ -2073,7 +2085,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
     if(ev.events & EPOLLIN)               //有数据需要读取
     {
         recv_queue::queue_type vRecvData;
-
+        // 读取数据
         int ret = recvBuffer(cPtr, vRecvData);
 
         if(ret < 0)
@@ -2085,12 +2097,14 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
         if(!vRecvData.empty())
         {
+            // 加入到队列中
             cPtr->insertRecvQueue(vRecvData);
         }
     }
 
     if (ev.events & EPOLLOUT)              //有数据需要发送
     {
+        // 发送数据
         int ret = sendBuffer(cPtr);
 
         if (ret < 0)
@@ -2104,36 +2118,44 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
     _list.refresh(uid, cPtr->getTimeout() + TNOW);
 }
 
+    // 开始epoll wait
 void TC_EpollServer::NetThread::run()
 {
     //循环监听网路连接请求
     while(!_bTerminate)
     {
+        // 删除超时的连接
         _list.checkTimeout(TNOW);
 
+        // epoll wait
         int iEvNum = _epoller.wait(2000);
 
         for(int i = 0; i < iEvNum; ++i)
         {
             try
             {
+                // 获取epoll_event
                 const epoll_event &ev = _epoller.get(i);
 
                 uint32_t h = ev.data.u64 >> 32;
 
+                // 根据epoll data中的数据来判断是哪一类请求
                 switch(h)
                 {
                 case ET_LISTEN:
                     {
                         //监听端口有请求
+                        // 根据监听socketfd 来找adapter
                         map<int, BindAdapterPtr>::const_iterator it = _listeners.find(ev.data.u32);
                         if( it != _listeners.end())
                         {
                             if(ev.events & EPOLLIN)
                             {
+                                // 读事件
                                 bool ret;
                                 do
                                 {
+                                    // 建立新连接
                                     ret = accept(ev.data.u32);
                                 }while(ret);
                             }
@@ -2141,7 +2163,7 @@ void TC_EpollServer::NetThread::run()
                     }
                     break;
                 case ET_CLOSE:
-                    //关闭请求
+                    //关闭请求 只要这个socket上有任何时间发生 这个线程就会退出
                     break;
                 case ET_NOTIFY:
                     //发送通知
@@ -2291,10 +2313,12 @@ int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
 
 void TC_EpollServer::addConnection(TC_EpollServer::NetThread::Connection * cPtr, int fd, int iType)
 {
+    // 根据socketfd来轮询其他的线程
     TC_EpollServer::NetThread* netThread = getNetThreadOfFd(fd);
 
     if(iType == 0)
     {
+        // tcp
         netThread->addTcpConnection(cPtr);
     }
     else

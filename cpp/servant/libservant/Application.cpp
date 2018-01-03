@@ -103,8 +103,10 @@ CommunicatorPtr& Application::getCommunicator()
     return _communicator;
 }
 
+    // 开始服务端的线程 并等待程序退出
 void Application::waitForQuit()
 {
+    // 获取当前时间
     int64_t iLastCheckTime = TNOW;
     int64_t iNow = iLastCheckTime;
 
@@ -1016,7 +1018,7 @@ void Application::initializeServer()
     {
         // 添加一个AdminServant
         ServantHelperManager::getInstance()->addServant<AdminServant>("AdminObj");
-        // 设置adapter为AdminAdapter
+        // 设置adapter为AdminAdapter 将adapter与servant关联起来
         ServantHelperManager::getInstance()->setAdapterServant("AdminAdapter", "AdminObj");
 
         // 新建一个bindAdapter
