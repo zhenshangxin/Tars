@@ -66,10 +66,12 @@ ObjectProxy * ObjectProxyFactory::getObjectProxy(const string& sObjectProxyName,
     return pObjectProxy;
 }
 
+    // 所有对象代理加载locator信息
 int ObjectProxyFactory::loadObjectLocator()
 {
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
+    // 已创建的obj数量
     for (size_t i = 0; i < _objNum; i++)
     {
         _vObjectProxys[i]->loadLocator();

@@ -153,6 +153,7 @@ public:
 
     static void scheduleDestruction(T*, void (*pFun)())
     {
+        // 登记在程序退出时执行的函数（main函数完成之后执行）
         std::atexit(pFun);
     }
 };
@@ -191,9 +192,11 @@ struct NoDestroyLifetime
 
 //////////////////////////////////////////////////////////////////////
 // Singleton
+    // 模板的模板参数
 template
 <
     typename T,
+        // 默认使用CreateUsingNew 和 DefaultLifetime
     template<class> class CreatePolicy   = CreateUsingNew,
     template<class> class LifetimePolicy = DefaultLifetime
 >
@@ -210,17 +213,29 @@ public:
      */
     static T *getInstance()
     {
+
         //加锁, 双check机制, 保证正确和效率
+        // 只有在未创建实例的时候才会加锁 实例创建完成后就不用加锁了
         if(!_pInstance)
         {
+            // 若无实例 加锁
             TC_ThreadLock::Lock lock(_tl);
+
+            // 第二次判断是为了防止这种情况：
+            // 第一个进程加锁之后 正在进行初始化
+            // 而第二个进程此时进入了第一次判断 正在等待锁
+            // 若没有第二次检查 第二个进程会在第一个进程释放锁之后又初始化一次
             if(!_pInstance)
             {
+                // 若无实例
+
                 if(_destroyed)
                 {
+                    // 若已经析构
                     LifetimePolicy<T>::deadReference();
                     _destroyed = false;
                 }
+                // 创建对象
                 _pInstance = CreatePolicy<T>::create();
                 LifetimePolicy<T>::scheduleDestruction((T*)_pInstance, &destroySingleton);
             }
@@ -232,7 +247,7 @@ public:
     virtual ~TC_Singleton(){}; 
 
 protected:
-
+    // 删除对象
     static void destroySingleton()
     {
         assert(!_destroyed);
@@ -252,6 +267,8 @@ protected:
     TC_Singleton &operator=(const TC_Singleton &);
 };
 
+
+// 初始化类的静态变量
 template <class T, template<class> class CreatePolicy, template<class> class LifetimePolicy> 
 TC_ThreadLock TC_Singleton<T, CreatePolicy, LifetimePolicy>::_tl; 
 

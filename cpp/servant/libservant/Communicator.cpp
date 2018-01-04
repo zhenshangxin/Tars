@@ -187,10 +187,12 @@ void Communicator::reloadLocator()
     }
 }
 
-    // 重新加载属性
+    // 重新加载属性 只加载与属性上报有关的属性
 int Communicator::reloadProperty(string & sResult)
 {
-    // 第一次调用时还未初始化 _clientThreadNum为0
+    // 线程数指定一次后无法更改
+
+    // 加载locator
     for(size_t i = 0; i < _clientThreadNum; ++i)
     {
         _communicatorEpoll[i]->getObjectProxyFactory()->loadObjectLocator();

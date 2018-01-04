@@ -787,6 +787,7 @@ void Application::initializeClient()
 {
     cout << "\n" << OUT_LINE_LONG << endl;
 
+    //_communicator静态 全局唯一
     //根据配置文件来初始化通信器
     _communicator = CommunicatorFactory::getInstance()->getCommunicator(_conf);
 

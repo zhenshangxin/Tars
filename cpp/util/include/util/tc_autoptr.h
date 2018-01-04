@@ -54,7 +54,7 @@ public:
     typedef T atomic_type;
 
     /**
-     * @brief 复制.
+     * @brief 赋值 返回此对象的引用.
      *
      * @return TC_HandleBase&
      */
@@ -190,6 +190,7 @@ public:
 
         if(_ptr)
         {
+            // 调用的是指针所指对象的incRef 也就是说引用计数是保存在指针所指对象中的
             _ptr->incRef();
         }
     }

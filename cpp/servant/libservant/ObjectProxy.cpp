@@ -78,6 +78,7 @@ void ObjectProxy::initialize()
 {
 }
 
+    // 加载locator
 int ObjectProxy::loadLocator()
 {
     if(_endpointManger->getDirectProxy())

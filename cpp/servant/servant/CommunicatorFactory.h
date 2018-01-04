@@ -48,6 +48,7 @@ public:
     CommunicatorPtr getCommunicator(const string& name = "default")
     {
         // 构造时上锁 析构时解锁
+        // 生成的其实是TC_LockT的对象 构造时调用this的加锁方法 析构时解锁
         TC_LockT<TC_ThreadRecMutex> lock(*this);
 
         map<string, CommunicatorPtr>::iterator it = _comms.find(name);
@@ -84,6 +85,7 @@ public:
             return it->second;
         }
 
+        // 若找到了 此时的Communicator是已经初始化过了的
         string s = "";
 
         // 根据配置文件来设置属性

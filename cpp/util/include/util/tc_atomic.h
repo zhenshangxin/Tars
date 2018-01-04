@@ -28,6 +28,8 @@ namespace tars
  * @brief  原子计数类. 
  */           
 
+
+    // C 中的定义
 __BEGIN_DECLS
 
 #define TARS_LOCK "lock ; "
@@ -146,7 +148,7 @@ public:
     }
 
     /**
-     * @brief 自减1
+     * @brief 自减1 并判断是否为0
      * Atomically decrements @_value by 1 and returns true if the
      * result is 0, or false for all other
      */
@@ -163,7 +165,7 @@ public:
     }
 
     /**
-     * @brief 设置值
+     * @brief 设置值 原子操作
      */
     atomic_type set(atomic_type i)
     {
@@ -179,6 +181,7 @@ protected:
      */
     int add_and_return(int i)
     {
+        // 内嵌的汇编代码 使int增加1
         /* Modern 486+ processor */
         int __i = i;
         __asm__ __volatile__(
