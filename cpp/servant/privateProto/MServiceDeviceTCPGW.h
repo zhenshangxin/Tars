@@ -61,6 +61,7 @@ namespace LSFreeIP
     public:
         virtual int onDispatch(tars::ReqMessagePtr msg)
         {
+            // 四种方法
             static ::std::string __MServiceDeviceTCPGW_all[]=
             {
                 "RPCGetDevicesList",
@@ -70,10 +71,12 @@ namespace LSFreeIP
             };
             pair<string*, string*> r = equal_range(__MServiceDeviceTCPGW_all, __MServiceDeviceTCPGW_all+4, string(msg->request.sFuncName));
             if(r.first == r.second) return tars::TARSSERVERNOFUNCERR;
+            // 决定调用哪一个方法
             switch(r.first - __MServiceDeviceTCPGW_all)
             {
                 case 0:
                 {
+                    // 结果错误
                     if (msg->response.iRet != tars::TARSSERVERSUCCESS)
                     {
                         callback_RPCGetDevicesList_exception(msg->response.iRet);
@@ -698,17 +701,21 @@ namespace LSFreeIP
     public:
         typedef map<string, string> TARS_CONTEXT;
 
-        // 同步 这个context在调用的时候并没有传入 初始化一个map<string, string>的map 作为context
+        // 同步 这个context在调用的时候并没有传入 初始化一个map<string, string>的map 作为context 用处：1、传入主调信息
         tars::Int32 RPCGetEndPointInfo(std::string &sRsp,const map<string, string> &context = TARS_CONTEXT(),map<string, string> * pResponseContext = NULL)
         {
+            // 用于将参数编码
             tars::TarsOutputStream<tars::BufferWriter> _os;
             // 写入sRsp
             _os.write(sRsp, 1);
             // 由RequestF.tars编译得出
             tars::ResponsePacket rep;
+            // 用处 传入染色信息
             std::map<string, string> _mStatus;
             //调用
             tars_invoke(tars::TARSNORMAL,"RPCGetEndPointInfo", _os.getByteBuffer(), context, _mStatus, rep);
+
+            // 若pResponseContext有值 获取pResponseContext
             if(pResponseContext)
             {
                 *pResponseContext = rep.context;
@@ -718,7 +725,9 @@ namespace LSFreeIP
             tars::TarsInputStream<tars::BufferReader> _is;
             _is.setBuffer(rep.sBuffer);
             tars::Int32 _ret;
+            // 读回复到ret中
             _is.read(_ret, 0, true);
+            // 读回复到sRsp中
             _is.read(sRsp, 1, true);
             return _ret;
         }

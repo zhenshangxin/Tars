@@ -721,6 +721,7 @@ void TC_EpollServer::NetThread::Connection::close()
 #if TARS_SSL
         if (_openssl)
         {
+            // 关闭连接的时候 如果有ssl 就释放
             _openssl->Release();
             _openssl = NULL;
         }
@@ -804,6 +805,7 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
             // ssl connection
             if (_pBindAdapter->getEndpoint().isSSL())
             {
+                // 读出数据
                 std::string out;
                 if (!_openssl->Read(_recvbuffer.data(), _recvbuffer.size(), out))
                 {
@@ -812,9 +814,12 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                 }
                 else
                 {
+                    // 如果不为空
                     if (!out.empty())
+                        // 发送握手的回复
                         this->send(out, "", 0);
 
+                    // 如果未握手 数据是不会到应用那的
                     rbuf = _openssl->RecvBuffer();
                 }
 
@@ -858,6 +863,15 @@ int TC_EpollServer::NetThread::Connection::parseProtocol(recv_queue::queue_type 
                     insertRecvQueue(o);
                     o.clear();
                 }
+
+                if(rbuf->empty())
+                {
+                    break;
+                }
+            }
+            else if (b == TC_EpollServer::PACKET_HEARTBEAT)
+            {
+                send(ro,"",0);
 
                 if(rbuf->empty())
                 {
@@ -1001,6 +1015,7 @@ int TC_EpollServer::NetThread::Connection::send(const string& buffer, const stri
 
     if (byEpollOut)
     {
+        // 从epoll out 中调用的此方法 直接发送
         int bytes = this->send(_sendbuffer);
         if (bytes == -1) 
         { 
@@ -1015,30 +1030,42 @@ int TC_EpollServer::NetThread::Connection::send(const string& buffer, const stri
     {
         const size_t kChunkSize = 8 * 1024 * 1024;
         if (!_sendbuffer.empty()) 
-        { 
+        {
+            // 若send buffer 不为空 则将数据插入到send buffer后
+
+            // 获取当前网络线程的内存池
             TC_BufferPool* pool = _pBindAdapter->getEpollServer()->getNetThreadOfFd(_sock.getfd())->_bufferPool;
-            // avoid too big chunk
+
+            // avoid too big chunk 分片
             for (size_t chunk = 0; chunk * kChunkSize < buffer.size(); chunk ++)
             {
+                // 最后一片不分配一整片 而是分配剩下的大小
                 size_t needs = std::min<size_t>(kChunkSize, buffer.size() - chunk * kChunkSize);
-
+                // 分配
                 TC_Slice slice = pool->Allocate(needs);
+                // 拷贝要发送的数据
                 ::memcpy(slice.data, buffer.data() + chunk * kChunkSize, needs);
+
                 slice.dataLen = needs;
 
+                //  插入到sendbuffer中
                 _sendbuffer.push_back(slice);
             }
         } 
         else 
-        { 
+        {
+            // 先试着发送一次
             int bytes = this->tcpSend(buffer.data(), buffer.size()); 
             if (bytes == -1) 
-            { 
+            {
+                // 发送失败 连接被断开
                 _pBindAdapter->getEpollServer()->debug("send [" + _ip + ":" + TC_Common::tostr(_port) + "] close connection by peer."); 
                 return -1; 
             } 
             else if (bytes < static_cast<int>(buffer.size())) 
-            { 
+            {
+                // 若数据没有被发送完 将剩下的数据插入到send buffer 中去
+
                 const char* remainData = &buffer[bytes];
                 const size_t remainLen = buffer.size() - static_cast<size_t>(bytes);
             
@@ -1094,6 +1121,7 @@ int TC_EpollServer::NetThread::Connection::send(const string& buffer, const stri
 
 int TC_EpollServer::NetThread::Connection::send()
 {
+    // 若sentbuffer 为空 返回
     if(_sendbuffer.empty()) return 0;
 
     return send("", _ip, _port, true);
@@ -1313,6 +1341,7 @@ TC_EpollServer::NetThread::Connection* TC_EpollServer::NetThread::ConnectionList
     return _vConn[uid].first;
 }
 
+// 此时间为当前时间加上超时时间
 void TC_EpollServer::NetThread::ConnectionList::add(Connection *cPtr, time_t iTimeOutStamp)
 {
     TC_ThreadLock::Lock lock(*this);
@@ -1323,9 +1352,15 @@ void TC_EpollServer::NetThread::ConnectionList::add(Connection *cPtr, time_t iTi
 
     assert(magi == _iConnectionMagic && uid > 0 && uid <= _total && !_vConn[uid].first);
 
+    // _tl.insert(make_pair(iTimeOutStamp, uid))
+    // insert返回的是指向被插入节点的迭代器
+    // 向tl中插入以时间戳为键 UID为值的pair
+
+    // vConn是一个数组 数组中元素的类型为pair
     _vConn[uid] = make_pair(cPtr, _tl.insert(make_pair(iTimeOutStamp, uid)));
 }
 
+    // 此超时时间为当前时间加上超时时间
 void TC_EpollServer::NetThread::ConnectionList::refresh(uint32_t uid, time_t iTimeOutStamp)
 {
     TC_ThreadLock::Lock lock(*this);
@@ -1335,19 +1370,23 @@ void TC_EpollServer::NetThread::ConnectionList::refresh(uint32_t uid, time_t iTi
 
     assert(magi == _iConnectionMagic && uid > 0 && uid <= _total && _vConn[uid].first);
 
+    // 1秒之内刚更新过
     if(iTimeOutStamp - _vConn[uid].first->_iLastRefreshTime < 1)
     {
         return;
     }
+
+    // 最后刷新时间设置为当前时间
     _vConn[uid].first->_iLastRefreshTime = iTimeOutStamp;
 
-    //删除超时链表
+    //删除旧的超时链表
     _tl.erase(_vConn[uid].second);
 
+    // 插入新的超时时间
     _vConn[uid].second = _tl.insert(make_pair(iTimeOutStamp, uid));
 }
 
-    // 检查超时数据
+// 检查超时数据 传入的是当前时间
 void TC_EpollServer::NetThread::ConnectionList::checkTimeout(time_t iCurTime)
 {
     //至少1s才能检查一次
@@ -1363,9 +1402,10 @@ void TC_EpollServer::NetThread::ConnectionList::checkTimeout(time_t iCurTime)
     // 超时链表
     multimap<time_t, uint32_t>::iterator it = _tl.begin();
 
+    // 遍历
     while(it != _tl.end())
     {
-        //已经检查到当前时间点了, 后了续不用在检查
+        //已经检查到当前时间点了, 后了续不用在检查 因为链接在插入这个超时链表时的时间为超时时的时间
         if(it->first > iCurTime)
         {
             break;
@@ -1864,12 +1904,16 @@ void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Conn
             return;
         }
 
+        // 删除之前的ssl对象
         delete cPtr->_openssl;
+        // 使用新的ssl对象
         cPtr->_openssl = new TC_OpenSSL();
         cPtr->_openssl->Init(ssl, true);
+        // 握手
         std::string out = cPtr->_openssl->DoHandshake();
         if (cPtr->_openssl->HasError())
         {
+            // 出错
             cPtr->getBindAdapter()->getEpollServer()->error("[TARS][SSL_accept error: " + cPtr->getBindAdapter()->getEndpoint().toString());
             this->close(uid);
             return;
@@ -1878,6 +1922,7 @@ void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Conn
         // send the encrypt data from write buffer
         if (!out.empty())
         {
+            // 不为空
             this->sendBuffer(cPtr, out, "", 0);
         }
     }
@@ -1925,6 +1970,18 @@ void TC_EpollServer::NetThread::delConnection(TC_EpollServer::NetThread::Connect
         recv->recvTimeStamp = TNOWMS;
         recv->fd         = cPtr->getfd();
         recv->closeType = (int)closeType;
+
+        debug(recv->adapter->getName());
+        ostringstream ss;
+        ss << recv->uid;
+        debug(ss.str());
+        ss.str("");
+        debug(recv->ip);
+        ss << recv->port;
+        debug(ss.str());
+        ss.str("");
+        ss << recv->closeType;
+        debug(ss.str());
 
         recv_queue::queue_type vRecvData;
 
@@ -2032,15 +2089,19 @@ void TC_EpollServer::NetThread::processPipe()
             {
                 Connection *cPtr = getConnectionPtr((*it)->uid);
 
+
+
                 if(cPtr)
                 {
 #if TARS_SSL
+                    // 发送数据
                     if (cPtr->getBindAdapter()->getEndpoint().isSSL() && cPtr->_openssl->IsHandshaked())
                     {
                         std::string out = cPtr->_openssl->Write((*it)->buffer.data(), (*it)->buffer.size());
                         if (cPtr->_openssl->HasError())
                             break; // should not happen
-    
+
+                        // 复制数据到buffer中
                         (*it)->buffer = out;
                     }
 #endif
@@ -2102,7 +2163,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
         }
     }
 
-    if (ev.events & EPOLLOUT)              //有数据需要发送
+    if (ev.events & EPOLLOUT)              //此处并不是有数据要发送 而是说socket准备好了去写 在socket被添加进epoll时设置了epollout 因此当此socket能写的时候会自动进入
     {
         // 发送数据
         int ret = sendBuffer(cPtr);
@@ -2115,6 +2176,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
         }
     }
 
+    // 有数据发送或者接收时刷新超时时间
     _list.refresh(uid, cPtr->getTimeout() + TNOW);
 }
 

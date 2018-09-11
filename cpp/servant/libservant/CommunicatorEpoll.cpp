@@ -170,13 +170,19 @@ void CommunicatorEpoll::notify(size_t iSeq,ReqInfoQueue * msgQueue)
     }
     else
     {
+        // 记录epoll中对应fd事件的类型
         _notify[iSeq].stFDInfo.iType   = FDInfo::ET_C_NOTIFY;
+        // 传入队列的指针
         _notify[iSeq].stFDInfo.p       = (void*)msgQueue;
+
         _notify[iSeq].stFDInfo.fd      = _notify[iSeq].eventFd;
+        // iSeq
         _notify[iSeq].stFDInfo.iSeq    = iSeq;
+        // 用来通知的socket
         _notify[iSeq].notify.createSocket();
         _notify[iSeq].bValid           = true;
 
+        // 传入的是fdInfo的指针
         _ep.add(_notify[iSeq].notify.getfd(),(long long)&_notify[iSeq].stFDInfo, EPOLLIN);
     }
 }
@@ -196,6 +202,7 @@ void CommunicatorEpoll::handleInputImp(Transceiver * pTransceiver)
     //检查连接是否有错误
     if(pTransceiver->isConnecting())
     {
+        // 连接出错
         int iVal = 0;
         socklen_t iLen = static_cast<socklen_t>(sizeof(int));
         if (::getsockopt(pTransceiver->fd(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&iVal), &iLen) == -1 || iVal)
@@ -258,11 +265,13 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
         //队列有消息通知过来
         if(FDInfo::ET_C_NOTIFY == pFDInfo->iType)
         {
+            // 请求队列
             ReqInfoQueue * pInfoQueue=(ReqInfoQueue*)pFDInfo->p;
             ReqMessage * msg = NULL;
 
             try
             {
+                // 获取一个ReqMessage
                 while(pInfoQueue->pop_front(msg))
                 {
                     //线程退出了
@@ -310,7 +319,7 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
         }
         else
         {
-
+            // 网络传输的基类
             Transceiver *pTransceiver = (Transceiver*)pFDInfo->p;
 
             //先收包
@@ -453,8 +462,10 @@ void CommunicatorEpoll::run()
 {
     TLOGDEBUG("CommunicatorEpoll::run id:"<<syscall(SYS_gettid)<<endl);
 
+    // 获取线程私有数据
     ServantProxyThreadData * pSptd = ServantProxyThreadData::getData();
     assert(pSptd != NULL);
+    // 网络线程的ID号
     pSptd->_netThreadSeq = (int)_netThreadSeq;
 
     while (!_terminate)
@@ -481,6 +492,7 @@ void CommunicatorEpoll::run()
                     continue; //data非指针, 退出循环
                 }
 
+                // 处理
                 handle((FDInfo*)data, ev.events);
             }
 

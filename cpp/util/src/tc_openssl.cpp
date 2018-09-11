@@ -33,6 +33,7 @@ TC_OpenSSL::~TC_OpenSSL()
 
 void TC_OpenSSL::Release()
 {
+    // 释放SSL对象
     if (_ssl)
     {
         SSL_free(_ssl);
@@ -42,6 +43,7 @@ void TC_OpenSSL::Release()
     _err = 0;
 }
 
+// 通过一个SSL对象来初始化
 void TC_OpenSSL::Init(SSL* ssl, bool isServer)
 {
     assert (_ssl == NULL);
@@ -74,17 +76,26 @@ std::string TC_OpenSSL::DoHandshake(const void* data, size_t size)
     if (data && size)
     {
         // 写入ssl内存缓冲区
+        // 将加密的数据写入 获取用来读的bio（input bio）
         BIO_write(SSL_get_rbio(_ssl), data, size);
     }
 
-    ERR_clear_error(); 
+    ERR_clear_error();
+
+    // 如果是server就accept 如果是client就connect
+
+    // SSL_connect 和一个server初始化TLS/SSL握手
+    // 如果底层的BIO是阻塞的，那么SSL connect只会再出错或者握手成功的时候返回
     int ret = _isServer ? SSL_accept(_ssl) : SSL_connect(_ssl);
 
     if (ret <= 0)
     {
+        // 出错
         _err = SSL_get_error(_ssl, ret);
+        // SSL_ERROR_WANT_READ 底层BIO有数据需要被读取
         if (_err != SSL_ERROR_WANT_READ)
         {
+
             return std::string();
         }
     }
@@ -96,9 +107,10 @@ std::string TC_OpenSSL::DoHandshake(const void* data, size_t size)
         _bHandshaked = true;
     }
 
-    // the encrypted data from write buffer
+
     std::string out;
-    TC_Buffer outdata; 
+    TC_Buffer outdata;
+    // 从写bio中读出数据 并放到out中
     GetMemData(SSL_get_wbio(_ssl), outdata);
     if (!outdata.IsEmpty()) 
     {
@@ -114,7 +126,9 @@ std::string TC_OpenSSL::Write(const void* data, size_t size)
         return std::string((const char*)data, size); //握手数据不用加密
  
     // 会话数据需加密
-    ERR_clear_error(); 
+    ERR_clear_error();
+
+    // 写入到SSL中
     int ret = SSL_write(_ssl, data, size); 
     if (ret <= 0) 
     {
@@ -124,6 +138,7 @@ std::string TC_OpenSSL::Write(const void* data, size_t size)
 
     _err = 0;
 
+    // 从写bio中读
     TC_Buffer toSend; 
     GetMemData(SSL_get_wbio(_ssl), toSend);
     return std::string(toSend.ReadAddr(), toSend.ReadableSize());
@@ -134,9 +149,16 @@ bool TC_OpenSSL::Read(const void* data, size_t size, std::string& out)
     bool usedData = false;
     if (!_bHandshaked)
     {
+        // 未握手
         usedData = true;
+
+        // 清空缓存
         _plainBuf.clear();
+
+        // 先握手
         std::string out2 = DoHandshake(data, size);
+
+        // 返回握手的回复
         out.swap(out2);
 
         if (_err != 0)
@@ -152,9 +174,11 @@ bool TC_OpenSSL::Read(const void* data, size_t size, std::string& out)
         if (!usedData)
         {
             // 写入ssl内存缓冲区
+            // 将数据写入到ssl的读bio中
             BIO_write(SSL_get_rbio(_ssl), data, size);
         }
 
+        // 从ssl的写bio中将数据读出
         string data;
         if (DoSSLRead(_ssl, data))
         {

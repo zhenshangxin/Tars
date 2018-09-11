@@ -53,13 +53,13 @@ ServantPrx::element_type* ServantProxyFactory::getServantProxy(const string& nam
         // objectProxy的name就为cjm.LSPtoPLinkServer.MServicePtoPLinkObj
         ppObjectProxy[i] = _comm->getCommunicatorEpoll(i)->getObjectProxy(name, setName);
     }
-    // 新建Servant代理
+    // 根据objProxy的数组来创建 Servant代理
     ServantPrx sp = new ServantProxy(_comm, ppObjectProxy, _comm->getClientThreadNum());
 
+    // 设置各项属性
     int syncTimeout  = TC_Common::strto<int>(_comm->getProperty("sync-invoke-timeout", "3000"));
     int asyncTimeout = TC_Common::strto<int>(_comm->getProperty("async-invoke-timeout", "5000"));
     int conTimeout   = TC_Common::strto<int>(_comm->getProperty("connect-timeout", "1500"));
-
     sp->tars_timeout(syncTimeout);
     sp->tars_async_timeout(asyncTimeout);
     sp->tars_connect_timeout(conTimeout);

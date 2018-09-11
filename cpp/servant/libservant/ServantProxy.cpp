@@ -39,37 +39,47 @@ SeqManager::SeqManager(size_t iNum)
 {
     assert(iNum < MAX_UNSIGN_SHORT);
     assert(iNum > 0);
+
+    // 新建一个SeqInfo的数组
     _p = NULL;
     _p = new SeqInfo[iNum];
     assert(_p);
 
     //0xff表示结束
+    // 开头
     _free = 0;
+    // 尾
     _freeTail = iNum -1;
 
     for(uint16_t i=0;i<(uint16_t)iNum;i++)
     {
+        // 遍历 初始化节点
         _p[i].free = true;
         _p[i].next = i+1;
     }
+    // 最后一个节点的NEXT设置为 MAX_UNSIGN_SHORT
     _p[iNum-1].next = MAX_UNSIGN_SHORT;
+    // 记录节点的数量
     _num = iNum;
 }
 
 uint16_t SeqManager::get()
 {
+    // 判断free指向的不是最后一个节点
     assert(_free != MAX_UNSIGN_SHORT);
-
+    // 判断当前_free指向的节点是否空闲
     assert(_p[_free].free);
 
     uint16_t buf = _free;
 
+    // 若队列里面只有一个元素 将freeTail置为MAX_UNSIGN_SHORT 使free指向它
     if(_free == _freeTail)
     {
         assert(_p[buf].next == MAX_UNSIGN_SHORT);
         _freeTail = MAX_UNSIGN_SHORT;
     }
 
+    // 将_free指向下一个节点 将当前节点设为占用 并返回它的索引值
     _free = _p[buf].next;
 
     _p[buf].free = false;
@@ -77,14 +87,19 @@ uint16_t SeqManager::get()
     return buf;
 }
 
+// 插入队尾
 void SeqManager::del(uint16_t iSeq)
 {
     assert(iSeq < _num);
     assert(!_p[iSeq].free);
 
+    // 使iSeq的next指向MAX_UNSIGN_SHORT
     _p[iSeq].next = MAX_UNSIGN_SHORT;
+
+    // 若队列中只有一个元素 free和free tail都指向它
     if(MAX_UNSIGN_SHORT == _freeTail)
     {
+        // 使free指向iSeq
         _free = iSeq;
     }
     else
@@ -157,8 +172,10 @@ void ServantProxyThreadData::destructor(void* p)
     }
 }
 
+// 静态方法
 ServantProxyThreadData * ServantProxyThreadData::getData()
 {
+    // 只创建一次
     if(_key == 0)
     {
         TC_LockT<TC_ThreadMutex> lock(_mutex);
@@ -182,7 +199,8 @@ ServantProxyThreadData * ServantProxyThreadData::getData()
 
     if(!pSptd)
     {
-        // 若为空
+        // 若没有获取到
+        // 链表需要加锁
         TC_LockT<TC_ThreadMutex> lock(_mutex);
         // 新建一个ServantProxyThreadData
         pSptd = new ServantProxyThreadData();
@@ -253,7 +271,9 @@ ServantProxy::ServantProxy(Communicator * pCommunicator, ObjectProxy ** ppObject
 : _communicator(pCommunicator)
 , _objectProxy(ppObjectProxy)
 , _objectProxyNum(iClientThreadNum)
+  // 同步调用超时 超时后不会被服务端处理
 , _syncTimeout(DEFAULT_SYNCTIMEOUT)
+  // 异步调用超时 超时后不会被服务端处理
 , _asyncTimeout(DEFAULT_ASYNCTIMEOUT)
 , _id(0)
 , _endpointInfo(NULL)
@@ -456,6 +476,7 @@ void ServantProxy::tars_ping()
     tars_invoke(tars::TARSNORMAL, "tars_ping", v, m, s, rsp);
 }
 
+// 设置hash值到线程私有数据中
 ServantProxy* ServantProxy::tars_hash(int64_t key)
 {
     ServantProxyThreadData * pSptd = ServantProxyThreadData::getData();
@@ -485,6 +506,7 @@ void ServantProxy::tars_clear_hash()
 {
 }
 
+// 每次调用都要设置
 ServantProxy* ServantProxy::tars_set_timeout(int msecond)
 {
     ServantProxyThreadData * pSptd = ServantProxyThreadData::getData();
@@ -520,12 +542,12 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
     //获取线程私有数据
     ServantProxyThreadData * pSptd = ServantProxyThreadData::getData();
     assert(pSptd != NULL);
-    // hash值
+    // 从线程私有数据中获取 设置hash值 染色等信息 hash值
     msg->bHash         = pSptd->_hash;
     msg->bConHash      = pSptd->_conHash;
     msg->iHashCode     = pSptd->_hashCode;
 
-    //hash每次调用完成都要清掉，不用透传
+    //hash每次调用完成都要清掉，不用透传（调用时每次都要设置hash值）
     pSptd->_hash       = false;
     pSptd->_conHash    = false;
 
@@ -551,6 +573,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
     //判断是否针对接口级设置超时
     if(pSptd->_hasTimeout)
     {
+        // 通过每次调用tars_set_timeout来设置
         msg->request.iTimeout = (pSptd->_timeout > 0)?pSptd->_timeout:msg->request.iTimeout;
         pSptd->_hasTimeout    = false;
     }
@@ -561,7 +584,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
     //选择网络线程
     selectNetThreadInfo(pSptd,pObjProxy,pReqQ);
 
-    //调用发起时间
+    //调用发起时间与ObjectProxy
     msg->iBeginTime   = TNOWMS;
     msg->pObjectProxy = pObjProxy;
 
@@ -590,6 +613,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
         }
         else
         {
+            // 同步调用时的条件变量
             msg->pMonitor = new ReqMonitor;
         }
     }
@@ -613,7 +637,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
                 else
                 {
                     TLOGERROR("[TARS][ServantProxy::invoke use coroutine's callback not set CoroParallelBasePtr]"<<endl);
-                    delete msg;
+                    delete msg ;
                     msg = NULL;
                     throw TarsUseCoroException("use coroutine's callback not set CoroParallelBasePtr");
                 }
@@ -630,6 +654,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
 
     //通知网络线程
     bool bEmpty = false;
+    // 是否同步
     bool bSync  = (msg->eType == ReqMessage::SYNC_CALL);
 
     // 加入队列
@@ -640,19 +665,23 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
         delete msg;
         msg = NULL;
 
+        // 传入请求时间通知的_reqQNo 此号码为全局唯一
         pObjProxy->getCommunicatorEpoll()->notify(pSptd->_reqQNo, pReqQ);
 
         throw TarsClientQueueException("client queue full");
     }
 
+    // 加入epoll中
     pObjProxy->getCommunicatorEpoll()->notify(pSptd->_reqQNo, pReqQ);
 
     //异步调用 另一个线程delele msg 如果是异步后面不能再用msg了
 
     if(bSync)
     {
+        // 若是同步
         if(!msg->bCoroFlag)
         {
+            // 不是协程 此值在其他线程中设置为true
             if(!msg->bMonitorFin)
             {
                 TC_ThreadLock::Lock lock(*(msg->pMonitor));
@@ -673,6 +702,7 @@ void ServantProxy::invoke(ReqMessage * msg, bool bCoroAsync)
         assert(msg->eStatus != ReqMessage::REQ_REQ);
 
         TLOGINFO("[TARS]ServantProxy::invoke line: " << __LINE__ << " status: " << msg->eStatus << " ret: " <<msg->response.iRet << endl);
+
 
         if(msg->eStatus == ReqMessage::REQ_RSP && msg->response.iRet == TARSSERVERSUCCESS)
         {
@@ -732,6 +762,7 @@ void ServantProxy::finished(ReqMessage * msg)
 }
 
 //////////////////////////////////////////////////////////////////
+// tars协议的异步调用
 void ServantProxy::tars_invoke_async(char  cPacketType,
                                     const string &sFuncName,
                                     const vector<char>& buf,
@@ -741,7 +772,7 @@ void ServantProxy::tars_invoke_async(char  cPacketType,
                                     bool  bCoro)
 {
     ReqMessage * msg = new ReqMessage();
-
+    // 若有回调对象则是异步 若无回调对象则是单向调用
     msg->init(callback?ReqMessage::ASYNC_CALL:ReqMessage::ONE_WAY,NULL,sFuncName);
     msg->callback = callback;
 
@@ -766,7 +797,7 @@ void ServantProxy::tars_invoke_async(char  cPacketType,
     invoke(msg, bCoro);
 }
 
-    // 同步调用
+// 同步调用
 void ServantProxy::tars_invoke(char  cPacketType,
                               const string& sFuncName,
                               const vector<char>& buf,
@@ -781,20 +812,21 @@ void ServantProxy::tars_invoke(char  cPacketType,
     msg->init(ReqMessage::SYNC_CALL,NULL,sFuncName);
 
 
-    // 填充request.packet
-    // 版本
+    // 填充ReqMessage中的RequestPacket
+    // 版本 tar内部的RPC调用版本为TARSVERSION
     msg->request.iVersion = TARSVERSION;
-    //包类型
+    //包类型 TARSNORMAL单向调用
     msg->request.cPacketType = cPacketType;
     //要调用servant的名称
     msg->request.sServantName = (*_objectProxy)->name();
     // 函数名
     msg->request.sFuncName    = sFuncName;
-    // 发送的数据
+
+    // 发送的数据（所调用函数的参数） 放入sBuffer中
     msg->request.sBuffer      = buf;
     // context
     msg->request.context      = context;
-    // status
+    // status 一个std::map<string, string> 由上一级传入
     msg->request.status       = status;
     // 同步调用的超时
     msg->request.iTimeout     = _syncTimeout;
@@ -802,6 +834,7 @@ void ServantProxy::tars_invoke(char  cPacketType,
     // 在RequestPacket中的context设置主调信息
     if(_masterFlag)
     {
+        // 在context中插入主调信息
         msg->request.context.insert(std::make_pair(TARS_MASTER_KEY,ClientConfig::ModuleName));
     }
 
@@ -867,13 +900,13 @@ void ServantProxy::rpc_call_async(uint32_t iRequestId,
 //选取一个网络线程对应的信息
 void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectProxy * & pObjProxy, ReqInfoQueue * & pReqQ)
 {
-    //指针为空 就new一个
+    // 队列（放在线程私有数据中）是否需要初始化
     if(!pSptd->_queueInit)
     {
         // 若没有初始化
         for(size_t i=0;i<_objectProxyNum;++i)
         {
-            // 多个网络线程的队列
+            // 初始化多个网络线程的队列
             pSptd->_reqQueue[i] = new ReqInfoQueue(_queueSize);
         }
         pSptd->_objectProxyNum = _objectProxyNum;
@@ -881,7 +914,7 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
         pSptd->_queueInit      = true;
     }
 
-    // 如果只有一个网络线程 那么就返回第一个
+    // 如果只有一个网络线程 那么就返回第一个pObjProxy
     if(_objectProxyNum == 1)
     {
         pObjProxy = *_objectProxy;
@@ -889,6 +922,7 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
     }
     else
     {
+        // 若网络线程序号大于0
         if(pSptd->_netThreadSeq >= 0)
         {
             //网络线程发起的请求 回到自己的网络线程来处理
@@ -902,6 +936,7 @@ void ServantProxy::selectNetThreadInfo(ServantProxyThreadData * pSptd, ObjectPro
             //用线程的私有数据来保存选到的seq
             pObjProxy = *(_objectProxy + pSptd->_netSeq);
             pReqQ     = pSptd->_reqQueue[pSptd->_netSeq];
+            // 保存轮训选择的偏移量
             pSptd->_netSeq++;
 
             if(pSptd->_netSeq == _objectProxyNum)
@@ -917,8 +952,9 @@ void ServantProxy::checkDye(RequestPacket& req)
     assert(pSptd != NULL);
     if(pSptd && pSptd->_dyeing)
     {
+        // 若需要染色 在RequestPacket的iMessageType中打开相应的位
         SET_MSG_TYPE(req.iMessageType, tars::TARSMESSAGETYPEDYED);
-
+        // 在status中插入染色的KEY
         req.status[ServantProxy::STATUS_DYED_KEY] = pSptd->_dyeingKey;
     }
 }

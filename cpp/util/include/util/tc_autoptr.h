@@ -248,16 +248,21 @@ public:
     {
         if(_ptr != p)
         {
+            // 不是自赋值
             if(p)
             {
+                // 若p指向了某个对象 计数加一
                 p->incRef();
             }
 
+            // 先获取旧指针
             T* ptr = _ptr;
+            // 赋值
             _ptr = p;
 
             if(ptr)
             {
+                // 旧指针减一
                 ptr->decRef();
             }
         }

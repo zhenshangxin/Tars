@@ -74,16 +74,23 @@ void ServantHandle::run()
     }
     else
     {
+        // 获取业务线程数
         unsigned int iThreadNum = getEpollServer()->getLogicThreadNum();
 
+        // 协程池的大小 协程占用内存空间的最大大小 除以 （每个协程的栈大小 * 业务线程数）
+        // 也就是 每个线程的协程栈的大小
         size_t iCoroutineNum = (ServerConfig::CoroutineMemSize > ServerConfig::CoroutineStackSize) ? (ServerConfig::CoroutineMemSize / (ServerConfig::CoroutineStackSize * iThreadNum) ) : 1;
         if(iCoroutineNum < 1)
             iCoroutineNum = 1;
 
+        // 未重写 此处是空方法
         startHandle();
 
+        // 新建协程调度类
         _coroSched = new CoroutineScheduler();
+        // 传入协程池的大小 与每个协程的栈大小
         _coroSched->init(iCoroutineNum, ServerConfig::CoroutineStackSize);
+        // 设置业务线程
         _coroSched->setHandle(this);
 
         _coroSched->createCoroutine(tars::TC_Bind(&ServantHandle::handleRequest, tars::tc_unretained(this)));
@@ -91,7 +98,7 @@ void ServantHandle::run()
         ServantProxyThreadData * pSptd = ServantProxyThreadData::getData();
 
         assert(pSptd != NULL);
-
+        // 在线程私有数据中放入协程调度器
         pSptd->_sched = _coroSched;
 
         while (!getEpollServer()->isTerminate())
@@ -478,6 +485,7 @@ void ServantHandle::heartbeat()
 
 TarsCurrentPtr ServantHandle::createCurrent(const TC_EpollServer::tagRecvData &stRecvData)
 {
+    // 智能指针 不用析构
     TarsCurrentPtr current = new TarsCurrent(this);
 
     try

@@ -156,6 +156,7 @@ void ObjectProxy::invoke(ReqMessage * msg)
 
     if(bFirst)
     {
+        // 无效的数据 插入超时队列中
         //判断是否请求过主控
         bool bRet = _reqTimeoutQueue.push(msg,msg->request.iTimeout+msg->iBeginTime);
 
@@ -169,6 +170,7 @@ void ObjectProxy::invoke(ReqMessage * msg)
 
     if(!pAdapterProxy)
     {
+        // adapterProxy为空
         TLOGERROR("[TARS][ObjectProxy::invoke, objname:"<< _name << ", selectAdapterProxy is null]"<<endl);
 
         msg->response.iRet = TARSADAPTERNULL;

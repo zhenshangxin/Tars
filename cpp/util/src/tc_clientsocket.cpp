@@ -74,18 +74,22 @@ void TC_Endpoint::parse(const string &str)
     string::size_type beg;
     string::size_type end = 0;
 
+    // 从头开始 直到找到第一个不是delim的字符
     beg = str.find_first_not_of(delim, end);
     if(beg == string::npos)
     {
+        // 没找到 报异常
         throw TC_EndpointParse_Exception("TC_Endpoint::parse error : " + str);
     }
 
+    // 找到第一个是\t\n\r的字符
     end = str.find_first_of(delim, beg);
     if(end == string::npos)
     {
         end = str.length();
     }
 
+    // 获取子字符串
     string desc = str.substr(beg, end - beg);
     if(desc == "tcp")
     {
@@ -104,45 +108,56 @@ void TC_Endpoint::parse(const string &str)
         throw TC_EndpointParse_Exception("TC_Endpoint::parse tcp or udp or ssl error : " + str);
     }
 
+    // 获取后面所有的字符串
     desc = str.substr(end);
     end  = 0;
     while(true)
     {
+        // 获取第一个不是空格的位置
         beg = desc.find_first_not_of(delim, end);
         if(beg == string::npos)
         {
             break;
         }
-
+        // 获取第一个是空格的位置
         end = desc.find_first_of(delim, beg);
         if(end == string::npos)
         {
             end = desc.length();
         }
 
+        // 获取选项
         string option = desc.substr(beg, end - beg);
+        // 选项的长度不为2 且不是以-开始
         if(option.length() != 2 || option[0] != '-')
         {
             throw TC_EndpointParse_Exception("TC_Endpoint::parse error : " + str);
         }
 
+
         string argument;
+        // 第一个不是空格的字符作为参数的开始
         string::size_type argumentBeg = desc.find_first_not_of(delim, end);
+        // 参数存在且第一个字符不为-
         if(argumentBeg != string::npos && desc[argumentBeg] != '-')
         {
+
             beg = argumentBeg;
             end = desc.find_first_of(delim, beg);
             if(end == string::npos)
             {
                 end = desc.length();
             }
+            // 获取参数字符串
             argument = desc.substr(beg, end - beg);
         }
 
+        // 判断选项的第二个字符
         switch(option[1])
         {
             case 'h':
             {
+
                 if(argument.empty())
                 {
                     throw TC_EndpointParse_Exception("TC_Endpoint::parse -h error : " + str);
@@ -197,6 +212,7 @@ void TC_Endpoint::parse(const string &str)
             }
             case 'v':
             {
+                // 用argument读入
                 istringstream t(argument);
                 if(!(t >> const_cast<unsigned int&>(_weighttype)) || !t.eof())
                 {

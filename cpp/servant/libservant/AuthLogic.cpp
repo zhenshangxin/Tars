@@ -72,7 +72,7 @@ bool processAuth(void* c, const string& data)
 
     if (newstate < 0)
     {
-        // ÑéÖ¤´íÎó,¶Ï¿ªÁ¬½Ó 
+        // éªŒè¯é”™è¯¯,æ–­å¼€è¿æ¥ 
         adapter->getEpollServer()->error("authProcess failed with new state [" + out + "]");
         conn->setClose();
         return true;
@@ -114,8 +114,8 @@ bool processAuth(void* c, const string& data)
 
 int processAuthReqHelper(const BasicAuthPackage& pkg, const BasicAuthInfo& info)
 {
-    // Ã÷ÎÄ:objName, accessKey, time, hashMethod
-    // ÃÜÎÄ:use TmpKey to enc secret1;
+    // æ˜æ–‡:objName, accessKey, time, hashMethod
+    // å¯†æ–‡:use TmpKey to enc secret1;
     // and tmpKey = sha1(secret2 | timestamp);
     if (pkg.sObjName != info.sObjName)
         return AUTH_WRONG_OBJ;
@@ -131,12 +131,12 @@ int processAuthReqHelper(const BasicAuthPackage& pkg, const BasicAuthInfo& info)
     if (pkg.sHashMethod != "sha1")
         return AUTH_NOT_SUPPORT_ENC;
 
-    // ÓÃsecret1 = sha1(password); secret2 = sha1(secret1);
+    // ç”¨secret1 = sha1(password); secret2 = sha1(secret1);
     // 1.client create TmpKey use timestamp and secret2;
     // 2.client use TmpKey to enc secret1;
     // 3.server use TmpKey same as client, to dec secret1;
     // 4.server got secret1, then sha1(secret1), to compare secret2;
-    // ÏÂÃæÕâ¸öÊÇ123456µÄÁ½´Îsha1Öµ
+    // ä¸‹é¢è¿™ä¸ªæ˜¯123456çš„ä¸¤æ¬¡sha1å€¼
     //assert (info.sHashSecretKey2 == "69c5fcebaa65b560eaf06c3fbeb481ae44b8d618");
 
     string tmpKey;
@@ -179,8 +179,8 @@ int processAuthReqHelper(const BasicAuthPackage& pkg, const BasicAuthInfo& info)
     return AUTH_SUCC;
 }
 
-// Ö»ĞèÒª´«Èë expect µÄobjname£»
-// ÄÚ²¿¸ù¾İobj²éÕÒaccessÕËºÅ¼¯
+// åªéœ€è¦ä¼ å…¥ expect çš„objnameï¼›
+// å†…éƒ¨æ ¹æ®objæŸ¥æ‰¾accessè´¦å·é›†
 int defaultProcessAuthReq(const char* request, size_t len, const string& expectObj)
 {
     if (len <= 20)
@@ -218,8 +218,8 @@ int defaultProcessAuthReq(const string& request, const string& expectObj)
 
 string defaultCreateAuthReq(const BasicAuthInfo& info, const string& hashMethod)
 {
-    // Ã÷ÎÄ:objName, accessKey, time, hashMethod
-    // ÃÜÎÄ:use TmpKey to enc secret1;
+    // æ˜æ–‡:objName, accessKey, time, hashMethod
+    // å¯†æ–‡:use TmpKey to enc secret1;
     TarsOutputStream<BufferWriter> os;
     BasicAuthPackage pkg;
     pkg.sObjName = info.sObjName;
@@ -238,7 +238,7 @@ string defaultCreateAuthReq(const BasicAuthInfo& info, const string& hashMethod)
         {
             tmp[i] |= pt[i];
         }
-        // ±£Ö¤keyÊÇ16×Ö½Ú
+        // ä¿è¯keyæ˜¯16å­—èŠ‚
         tmpKey = TC_MD5::md5bin(tmp);
     }
 

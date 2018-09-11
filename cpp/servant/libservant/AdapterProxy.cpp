@@ -182,6 +182,7 @@ int AdapterProxy::invoke(ReqMessage * msg)
             return 0;
         }
 
+        // 插入超时队列中
         bool bFlag = _timeoutQueue->push(msg, msg->request.iRequestId, msg->request.iTimeout + msg->iBeginTime);
         if(!bFlag)
         {
@@ -525,6 +526,7 @@ void AdapterProxy::finishInvoke(ResponsePacket & rsp)
     else
     {
         //这里的队列中的发送链表中的数据可能已经在timeout的时候删除了
+        // 获取到msg并将其从timeout queue中删除
         bool retErase = _timeoutQueue->erase(rsp.iRequestId, msg);
 
         //找不到此请求id信息

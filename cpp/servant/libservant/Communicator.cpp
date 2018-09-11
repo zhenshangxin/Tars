@@ -207,27 +207,25 @@ int Communicator::reloadProperty(string & sResult)
     int iMaxSampleCount = TC_Common::strto<int>(getProperty("max-sample-count", "100"));
 
     int iMaxReportSize = TC_Common::strto<int>(getProperty("max-report-size", "1400"));
+
     // 数据统计的地址 见Introduction.md
     string statObj = getProperty("stat", "");
     // 属性统计的地址
     string propertyObj = getProperty("property", "");
-
-    // 数据统计代理
+    // 获取数据统计代理
     StatFPrx statPrx = NULL;
-
     if (!statObj.empty())
     {
         statPrx = stringToProxy<StatFPrx>(statObj);
     }
 
-    // 属性统计代理
+    // 获取属性统计代理
     PropertyFPrx propertyPrx = NULL;
-
     if (!propertyObj.empty())
     {
         propertyPrx = stringToProxy<PropertyFPrx>(propertyObj);
     }
-
+    // 上报类 上报数据
     string sSetDivision = ClientConfig::SetOpen?ClientConfig::SetDivision:"";
     _statReport->setReportInfo(statPrx, propertyPrx, ClientConfig::ModuleName, ClientConfig::LocalIp, sSetDivision, iReportInterval, iSampleRate, iMaxSampleCount, iMaxReportSize, iReportTimeout);
 
@@ -315,6 +313,7 @@ void Communicator::initialize()
         propertyPrx = stringToProxy<PropertyFPrx>(propertyObj);
     }
 
+    // 上报数据
     string sSetDivision = ClientConfig::SetOpen?ClientConfig::SetDivision:"";
     _statReport->setReportInfo(statPrx, propertyPrx, ClientConfig::ModuleName, ClientConfig::LocalIp, sSetDivision, iReportInterval, iSampleRate, iMaxSampleCount, iMaxReportSize, iReportTimeout);
 }

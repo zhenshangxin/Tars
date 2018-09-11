@@ -86,6 +86,8 @@ public:
 
     ///////////////////////////////////////////////////////////////////////////////////
     /**
+     * 存放一条数据记录（key value）的数据区称为block
+     * 而一个block可能由 多个chunck组成 当个数据记录的value过大时而一个chunck放不下 这时就会有多个chunck
     * @brief 内存数据块,读取和存放数据 
     */
     class Block
@@ -115,7 +117,7 @@ public:
                 size_t  _iDataLen;      /**当前数据块中使用了的长度, _bNextChunk=false时有效*/
             };
             char        _cData[0];      /**数据开始部分*/
-        }__attribute__((packed));
+        }__attribute__((packed));      // 按照实际占用的字节数进行对齐
 
         /**
          * @brief 非头部的block, 称为chunk
@@ -134,17 +136,17 @@ public:
 
         /**
          * @brief 构造函数
-         * @param Map
+         * @param Map 此类是hash map 的内部类
          * @param iAddr 当前MemBlock的地址
          */
         Block(TC_HashMap *pMap, size_t iAddr)
         : _pMap(pMap)
-        , _iHead(iAddr)
+        , _iHead(iAddr) // block区块的首地址 是一个相对地址
         {
         }
 
         /**
-         * @brief copy
+         * @brief copy 拷贝构造函数
          * @param mb
          */
         Block(const Block &mb)
@@ -155,7 +157,7 @@ public:
 
         /**
          *
-         * @param mb
+         * @param mb 赋值操作符
          *
          * @return Block&
          */
@@ -168,6 +170,7 @@ public:
 
         /**
          *
+         * ==操作符
          * @param mb
          *
          * @return bool
@@ -183,7 +186,7 @@ public:
         bool operator!=(const Block &mb) const { return _iHead != mb._iHead || _pMap != mb._pMap; }
 
         /**
-         * 获取block头绝对地址
+         * 根据偏移地址获取block头绝对地址 返回一个tagBlockHead的指针
          * @param iAddr
          *
          * @return tagChunkHead*
@@ -198,7 +201,7 @@ public:
         tagBlockHead *getBlockHead() {return getBlockHead(_iHead);}
 
         /**
-         * 头部
+         * 头部 返回的时一个便宜地址
          *
          * @return size_t
          */
@@ -1752,7 +1755,7 @@ protected:
     void delListCount(size_t index) { update(&item(index)->_iListCount, item(index)->_iListCount-1); }
 
     /**
-     * @brief 相对地址换成绝对地址
+     * @brief 相对地址换成绝对地址 将tagMapHead的地址加上相对地址的偏移
      * @param iAddr
      *
      * @return void*

@@ -23,25 +23,31 @@ namespace tars
 
 int TC_HashMap::Block::getBlockData(TC_HashMap::BlockData &data)
 {
+    // 若此block中的数据为脏数据 则设置对应的data为脏数据
     data._dirty = isDirty();
+    // 设置上次的缓写时间
     data._synct = getSyncTime();
 
     string s;
+    // 获取数据
     int ret   = get(s);
 
     if(ret != TC_HashMap::RT_OK)
     {
+        // 不成功 返回结果
         return ret;
     }
 
     try
     {
         TC_PackOut po(s.c_str(), s.length());
+        // 输出键到data中
         po >> data._key;
 
         //如果不是只有Key
         if(!isOnlyKey())
         {
+            // 输出值
             po >> data._value;
         }
         else
@@ -60,7 +66,7 @@ int TC_HashMap::Block::getBlockData(TC_HashMap::BlockData &data)
 size_t TC_HashMap::Block::getLastBlockHead()
 {
     size_t iHead = _iHead;
-
+    // 获取block的绝对地址 一直遍历 _iBlockNext为0 也就是最后一个block
     while(getBlockHead(iHead)->_iBlockNext != 0)
     {
         iHead = getBlockHead(iHead)->_iBlockNext;
@@ -75,17 +81,23 @@ int TC_HashMap::Block::get(void *pData, size_t &iDataLen)
     {
         memcpy(pData, getBlockHead()->_cData, min(getBlockHead()->_iDataLen, iDataLen));
         iDataLen = getBlockHead()->_iDataLen;
+        // 返回成功
         return TC_HashMap::RT_OK;
     }
     else
     {
+        // 获取整个Block头所能放下的数据总量
         size_t iUseSize = getBlockHead()->_iSize - sizeof(tagBlockHead);
+        // 获取其中较小的一个
         size_t iCopyLen = min(iUseSize, iDataLen);
 
         //copy到当前的block中
         memcpy(pData, getBlockHead()->_cData, iCopyLen);
+
+        // 此block头中的数据没有将整个空间完全使用
         if (iDataLen < iUseSize)
         {
+            // 返回数据不完全
             return TC_HashMap::RT_NOTALL_ERR;   //copy数据不完全
         }
 
@@ -94,19 +106,26 @@ int TC_HashMap::Block::get(void *pData, size_t &iDataLen)
         //最大剩余长度
         size_t iLeftLen = iDataLen - iCopyLen;
 
+        // 下一块chunk的位置
         tagChunkHead *pChunk    = getChunkHead(getBlockHead()->_iNextChunk);
         while(iHasLen < iDataLen)
         {
             iUseSize        = pChunk->_iSize - sizeof(tagChunkHead);
             if(!pChunk->_bNextChunk)
             {
+                // 无下一块 最后一次执行
+
                 //copy到当前的chunk中
                 size_t iCopyLen = min(pChunk->_iDataLen, iLeftLen);
                 memcpy((char*)pData + iHasLen, pChunk->_cData, iCopyLen);
+
+                // 已拷贝的数据的长度
                 iDataLen = iHasLen + iCopyLen;
 
+                // 若剩余的长度比 当前数据块中使用了的长度要小 （此块中还有数据没有拷贝）
                 if(iLeftLen < pChunk->_iDataLen)
                 {
+                    // 返回错误
                     return TC_HashMap::RT_NOTALL_ERR;       //copy不完全
                 }
 
@@ -117,8 +136,10 @@ int TC_HashMap::Block::get(void *pData, size_t &iDataLen)
                 size_t iCopyLen = min(iUseSize, iLeftLen);
                 //copy当前的chunk
                 memcpy((char*)pData + iHasLen, pChunk->_cData, iCopyLen);
+
                 if (iLeftLen <= iUseSize)
                 {
+                    // 剩下要拷贝的数据比当前chunk中的数据要小
                     iDataLen = iHasLen + iCopyLen;
                     return TC_HashMap::RT_NOTALL_ERR;   //copy不完全
                 }
@@ -137,18 +158,25 @@ int TC_HashMap::Block::get(void *pData, size_t &iDataLen)
 
 int TC_HashMap::Block::get(string &s)
 {
+    // 获取总的数据长度
     size_t iLen = getDataLen();
 
+    // new一个char数组
     char *cData = new char[iLen];
     size_t iGetLen = iLen;
+
+    // 将数据获取到cData中
     int ret = get(cData, iGetLen);
+    // 若结果成功 将此数据块保存到string中
     if(ret == TC_HashMap::RT_OK)
     {
         s.assign(cData, iGetLen);
     }
 
+    // 删除
     delete[] cData;
 
+    // 返回结果
     return ret;
 }
 
@@ -821,8 +849,10 @@ int TC_HashMap::Block::allocateChunk(size_t fn, vector<size_t> &chunks, vector<T
 size_t TC_HashMap::Block::getDataLen()
 {
     size_t n = 0;
+    // 没有下一个chunk
     if(!getBlockHead()->_bNextChunk)
     {
+        // 直接获取当前块中的数据长度
         n += getBlockHead()->_iDataLen;
         return n;
     }
@@ -831,6 +861,7 @@ size_t TC_HashMap::Block::getDataLen()
     n += getBlockHead()->_iSize - sizeof(tagBlockHead);
     tagChunkHead *pChunk    = getChunkHead(getBlockHead()->_iNextChunk);
 
+    // 遍历获取所有块的大小
     while (true)
     {
         if(pChunk->_bNextChunk)

@@ -17,7 +17,7 @@
 #ifndef __TC_SSLMANAGER_H
 #define __TC_SSLMANAGER_H
 
-#if TARS_SSL
+//#if TARS_SSL
 
 #include <map>
 #include <string>
@@ -81,7 +81,7 @@ private:
 
 } // end namespace tars
 
-#endif // end #if TARS_SSL
+//#endif // end #if TARS_SSL
 
 #endif
 

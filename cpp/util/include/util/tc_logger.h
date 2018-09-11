@@ -170,6 +170,7 @@ namespace tars
 
             if (bEnable)
             {
+                // 在hash map 中插入自己的线程ID
                 _mapThreadID.insert(std::make_pair(pthread_self(), sKey));
                 //_setThreadID.insert(pthread_self());
             }
@@ -186,7 +187,7 @@ namespace tars
     protected:
 
         /**
-         * buffer
+         * buffer int为线程ID
          */
         TC_ThreadQueue<pair<int, string> >  _buffer;
 
@@ -284,6 +285,7 @@ namespace tars
             }
         };
 
+        // 第二个参数是用来做比较的函数
         typedef set<TC_LoggerRollPtr, KeyComp>  logger_set;
 
     protected:
@@ -294,7 +296,7 @@ namespace tars
         bool            _bTerminate;
 
         /**
-         * 写线程
+         * 写线程池
          */
         TC_ThreadPool   _tpool;
 
@@ -306,7 +308,7 @@ namespace tars
     };
 
 /**
- * @brief 自定义logger buffer
+ * @brief 自定义logger buffer 继承自basic_streambuf
  */
     class LoggerBuffer : public std::basic_streambuf<char>
     {
@@ -411,8 +413,10 @@ namespace tars
          * @param stream
          * @param mutex
          */
+        // 传入头 一个流 一个空流
 		LoggerStream(const char *header, ostream *stream, ostream *estream, TC_ThreadRecMutex &mutex) : _stream(stream), _estream(estream), _mutex(mutex)
         {
+            // 将header输入buffer中中
             _buffer << header;
         }
 
@@ -423,14 +427,18 @@ namespace tars
         {
             if (_stream)
             {
+                // 加锁
 				TC_LockT<TC_ThreadRecMutex> lock(_mutex);
                 _stream->clear();
+                // 将buffer的内容输出到ostream中
                 (*_stream) << _buffer.str();
 
                 _stream->flush();
             }
         }
 
+
+        // 将内容输入到_buffer中
         /**
         * @brief 重载<<
         */
@@ -438,7 +446,7 @@ namespace tars
         LoggerStream& operator << (const P &t)  { if (_stream) _buffer << t;return *this;}
 
         /**
-         * @brief endl,flush等函数
+         * @brief endl,flush等函数 使<< 支持flush endl 等函数
          */
         typedef ostream& (*F)(ostream& os);
         LoggerStream& operator << (F f)         { if (_stream) (f)(_buffer);return *this;}
@@ -451,7 +459,7 @@ namespace tars
 
         /**
          * @brief 字段转换成ostream类型.
-         *
+         * // 类型转换 可转换为ostream类
          * @return ostream&
          */
         operator ostream&()
@@ -464,7 +472,7 @@ namespace tars
             return *_estream;
         }
 
-        //不实现
+        //不实现 拷贝构造与赋值操作符
         LoggerStream(const LoggerStream& lt);
         LoggerStream& operator=(const LoggerStream& lt);
 
@@ -494,6 +502,7 @@ namespace tars
 /**
  * @brief 日志基类
  */
+    // 此处传入两个模板参数是用来确定他的父类的 此类自己并没有使用这两个参数
     template<typename WriteT, template<class> class RollPolicy>
     class TC_Logger : public RollPolicy<WriteT>::RollWrapperI
     {
@@ -524,6 +533,7 @@ namespace tars
 
         /**
          * @brief 日志级别名称
+         * string的数组 有6个元素
          */
         static const string LN[6];
 
@@ -533,9 +543,13 @@ namespace tars
         TC_Logger()
         : _flag(HAS_TIME)
         , _level(DEBUG_LOG)
+          // 用父类中的roll来初始化自己的buffer成员 roll为一个RollPolicyWriteT类型的智能指针
         , _buffer(TC_LoggerRollPtr::dynamicCast(this->_roll), 1024)
+          // 用buffer构造的stream
         , _stream(&_buffer)
+          // 空buffer
         , _ebuffer(NULL, 0)
+          // ???
         , _estream(&_ebuffer)
         ,_sSepar("|")
         ,_bHasSquareBracket(false)
@@ -723,14 +737,18 @@ namespace tars
                 TC_TimeProvider::getInstance()->getNow(&t);
                 //gettimeofday(&t, NULL);
 
+                // 用来表示时间的结构体
                 tm tt;
+                // 将tv_sec转为对应的tt结构体
                 localtime_r(&t.tv_sec, &tt);
+                // 将内容拷贝到c中
                 const char *szFormat = (_bHasSquareBracket)?("[%04d-%02d-%02d %02d:%02d:%02d.%03ld]%s"):("%04d-%02d-%02d %02d:%02d:%02d.%03ld%s");
                 n += snprintf(c + n, len-n, szFormat,
                               tt.tm_year + 1900, tt.tm_mon+1, tt.tm_mday, tt.tm_hour, tt.tm_min, tt.tm_sec, t.tv_usec/1000,_sSepar.c_str());
             }
             else if (hasFlag(TC_Logger::HAS_TIME))
             {
+                // 秒级的时间
                 time_t t = TNOW;
                 tm tt;
                 localtime_r(&t, &tt);
@@ -741,11 +759,13 @@ namespace tars
 
             if (hasFlag(TC_Logger::HAS_PID))
             {
+                // 线程ID
                 n += snprintf(c + n, len - n, "%ld%s", syscall(SYS_gettid), _sSepar.c_str());
             }
 
             if (hasFlag(TC_Logger::HAS_LEVEL))
             {
+                // 等级
                 n += snprintf(c + n, len - n, "%s%s", TC_Logger::LN[level].c_str(), _sSepar.c_str());
             }
         }
@@ -756,13 +776,15 @@ namespace tars
          * @param level
          * @return LoggerStream
          */
+        // 用_stream等构造的LoggerStream对象
         LoggerStream stream(int level)
         {
             ostream *ost = NULL;
-
+            // 若要打印的日志等级小于设定的等级
             if (level <= _level)
             {
                 char c[128] = "\0";
+                // 获取头部信息
                 head(c, sizeof(c) - 1, level);
 
                 ost = &_stream;
@@ -1031,6 +1053,7 @@ namespace tars
          */
         ~TC_RollBySize()
         {
+            // 关闭日志文件
             if (_of.is_open())
             {
                 _of.close();
@@ -1112,6 +1135,7 @@ namespace tars
 
             if (_path.empty())
             {
+                // 若路径为空 写到cout中
                 _t(cout, buffer);
                 return;
             }
@@ -1128,11 +1152,15 @@ namespace tars
             //检查日志文件是否打开
             if (!_of.is_open())
             {
+                // 若未打开
                 string sLogFileName = _path + ".log";
+                // 打开文件 Seek to end before each write.
                 _of.open(sLogFileName.c_str(), ios::app);
 
+                // 从完全的路径名中提取出文件的路径（不包含文件名）
                 string sLogFilePath = TC_File::extractFilePath(_path);
 
+                // 判断此文件夹是否存在 若不存在则创建文件夹
                 if (!TC_File::isFileExist(sLogFilePath,S_IFDIR))
                 {
                     TC_File::makeDirRecursive(sLogFilePath);
@@ -1140,6 +1168,7 @@ namespace tars
 
                 if (!_of)
                 {
+                    // 当流出现错误时
                     //抛异常前继续进入_t 以便打远程日志
                     _t(_of, buffer);
 
@@ -1148,6 +1177,7 @@ namespace tars
 
             }
 
+            // 写
             _t(_of, buffer);
 
             if (tt <= 5)
@@ -1156,6 +1186,8 @@ namespace tars
             }
 
             //文件大小小于限制, 直接返回
+
+            // Returns the position of the current character in the output stream.
             if (_of.tellp() < _maxSize)
             {
                 return;
@@ -1163,8 +1195,10 @@ namespace tars
 
             //文件大小超出限制,删除最后一个文件
             string sLogFileName = _path + TC_Common::tostr(_maxNum - 1) + ".log";
+            // 检查是否有权限
             if (access(sLogFileName.c_str(), F_OK) == 0)
             {
+                // 删除文件
                 if (remove(sLogFileName.c_str()) < 0 )
                 {
                     return;
@@ -1186,11 +1220,13 @@ namespace tars
                 if (access(sLogFileName.c_str(), F_OK) == 0)
                 {
                     string sNewLogFileName = _path + TC_Common::tostr(i + 1) + ".log";
+                    // 重命名
                     rename(sLogFileName.c_str(), sNewLogFileName.c_str());
                 }
             }
-
+            // 关闭流
             _of.close();
+            // 重新打开
             _of.open(sLogFileName.c_str(), ios::app);
             if (!_of)
             {

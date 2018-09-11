@@ -34,7 +34,7 @@ namespace tars
 {
 ////////////////////////////////////////////////////////////////////////
 /**
- * 客户端配置
+ * 客户端配置 静态变量
  */
 struct ClientConfig
 {
@@ -117,9 +117,10 @@ public:
      */
     template<class T> void stringToProxy(const string& objectName, T& proxy,const string& setName="")
     {
-        // setName默认为空
+        // setName默认为空 获取一个ServantProxy
         ServantProxy * pServantProxy = getServantProxy(objectName,setName);
         // 强转为对应类型的代理
+        // todo: ????????
         proxy = (typename T::element_type*)(pServantProxy);
     }
 

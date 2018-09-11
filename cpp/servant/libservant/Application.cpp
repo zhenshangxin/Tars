@@ -74,6 +74,7 @@ static string outfill(const string& s, char c = ' ', int n = 29)
 #define OUT_LINE_LONG   (outfill("", '=', 50))
 
 ///////////////////////////////////////////////////////////////////////////////////////////
+// 三个静态成员变量的定义
 TC_Config                       Application::_conf;
 TC_EpollServerPtr               Application::_epollServer  = NULL;
 CommunicatorPtr                 Application::_communicator = NULL;
@@ -103,7 +104,7 @@ CommunicatorPtr& Application::getCommunicator()
     return _communicator;
 }
 
-    // 开始服务端的线程 并等待程序退出
+// 开始服务端的线程 并等待程序退出
 void Application::waitForQuit()
 {
     // 获取当前时间
@@ -130,6 +131,7 @@ void Application::waitForQuit()
 
         iNow = TNOW;
 
+        // 上报发送队列的大小
         if(iNow - iLastCheckTime > REPORT_SEND_QUEUE_INTERVAL)
         {
             iLastCheckTime = iNow;
@@ -152,6 +154,7 @@ void Application::waitForQuit()
         for(size_t i = 0; i < iNetThreadNum; ++i)
         {
             vNetThread[i]->terminate();
+            // 等待这些网络线程的结束
             vNetThread[i]->getThreadControl().join();
         }
 
@@ -163,6 +166,7 @@ void Application::waitForShutdown()
 {
     waitForQuit();
 
+    // 子类的 destroyApp
     destroyApp();
 
     TarsRemoteNotify::getInstance()->report("stop", true);
@@ -176,6 +180,7 @@ void Application::terminate()
     }
 }
 
+// 输出服务的各种信息
 bool Application::cmdViewStatus(const string& command, const string& params, string& result)
 {
     TLOGINFO("Application::cmdViewStatus:" << command << " " << params << endl);
@@ -200,6 +205,7 @@ bool Application::cmdViewStatus(const string& command, const string& params, str
 
     return true;
 }
+
 bool Application::cmdCloseCoreDump(const string& command, const string& params, string& result)
 {
     struct rlimit tlimit;
@@ -593,6 +599,7 @@ void Application::main(int argc, char *argv[])
     try
     {
 #if TARS_SSL
+        // 初始化ssl
         SSLManager::GlobalInit();
 #endif
         // 静态方法 忽略SIGPIPE这个信号
@@ -651,6 +658,7 @@ void Application::main(int argc, char *argv[])
 
         cout << OUT_LINE_LONG << endl;
 
+        // 添加命令与对应的处理方法
         //动态加载配置文件
         TARS_ADD_ADMIN_CMD_PREFIX(TARS_CMD_LOAD_CONFIG, Application::cmdLoadConfig);
 
@@ -683,6 +691,8 @@ void Application::main(int argc, char *argv[])
 
         //重新加载locator信息
         TARS_ADD_ADMIN_CMD_PREFIX(TARS_CMD_RELOAD_LOCATOR, Application::cmdReloadLocator);
+
+
 
         //上报版本
         TARS_REPORTVERSION(TARS_VERSION);
@@ -787,7 +797,7 @@ void Application::initializeClient()
 {
     cout << "\n" << OUT_LINE_LONG << endl;
 
-    //_communicator静态 全局唯一
+    //_communicator静态 全局唯一 不用初始化
     //根据配置文件来初始化通信器
     _communicator = CommunicatorFactory::getInstance()->getCommunicator(_conf);
 
@@ -797,10 +807,13 @@ void Application::initializeClient()
     outClient(cout);
 #if TARS_SSL
     try {
+
+        // 证书所在目录
         string path = _conf.get("/tars/application/clientssl/<path>", "./");
         if (path.empty() || path[path.length() - 1] != '/')
             path += "/";
 
+        // ca公有证书 用于验证服务器
         string ca = path + _conf.get("/tars/application/clientssl/<ca>");
         string cert = path + _conf.get("/tars/application/clientssl/<cert>");
         if (cert == path) cert.clear();
@@ -971,7 +984,10 @@ void Application::initializeServer()
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     //初始化本地Log
     cout << OUT_LINE << "\n" << outfill("[set roll logger] ") << "OK" << endl;
+    // LogPath 为  /usr/local/app/tars/app_log/
     TarsRollLogger::getInstance()->setLogInfo(ServerConfig::Application, ServerConfig::ServerName, ServerConfig::LogPath, ServerConfig::LogSize, ServerConfig::LogNum, _communicator, ServerConfig::Log);
+    // 将此TC_Logger对象设置为epoll Server的本地日志对象
+    // 方便在epoll Server中打日志
     _epollServer->setLocalLogger(TarsRollLogger::getInstance()->logger());
 
     //初始化时日志为同步

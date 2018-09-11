@@ -14,7 +14,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-#if TARS_SSL
+//#if TARS_SSL
 
 #include "util/tc_sslmgr.h"
 #include "util/tc_buffer.h"
@@ -58,9 +58,11 @@ bool SSLManager::AddCtx(const std::string& name,
                         const std::string& keyfile,
                         bool verifyClient)
 {
+    // 检查是否已有证书 已有则返回
     if (_ctxSet.count(name))
         return false;
-    
+
+    // 新建一个 SSL_CTX
     SSL_CTX* ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx)
         return false;
@@ -71,6 +73,7 @@ bool SSLManager::AddCtx(const std::string& name,
         return false;\
     }
 
+    // 设置对端检验的参数
     if (verifyClient)
         SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
     else
@@ -81,6 +84,9 @@ bool SSLManager::AddCtx(const std::string& name,
     SSL_CTX_clear_options(ctx, SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION); 
 
     RETURN_IF_FAIL (SSL_CTX_set_session_id_context(ctx, (const unsigned char*)ctx, sizeof ctx));
+
+
+    // 加载受ca信任的证书
     if (!cafile.empty())
         RETURN_IF_FAIL (SSL_CTX_load_verify_locations(ctx, cafile.data(), NULL));
 
@@ -109,15 +115,20 @@ SSL_CTX* SSLManager::GetCtx(const std::string& name) const
 
 SSL* NewSSL(const std::string& ctxName)
 {
+    // 找到对应的SSL_CTX
     SSL_CTX* ctx = SSLManager::getInstance()->GetCtx(ctxName);
     if (!ctx)
         return NULL;
 
+    // 新建一个SSL
     SSL* ssl = SSL_new(ctx);
 
     SSL_set_mode(ssl, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER); // allow retry ssl-write with different args
+
+    // 设置读和写的bio
     SSL_set_bio(ssl, BIO_new(BIO_s_mem()), BIO_new(BIO_s_mem()));
 
+    //在bio为空的时候返回-1
     BIO_set_mem_eof_return(SSL_get_rbio(ssl), -1);
     BIO_set_mem_eof_return(SSL_get_wbio(ssl), -1);
 
@@ -129,6 +140,7 @@ void GetMemData(BIO* bio, TC_Buffer& buf)
     while (true)
     {
         buf.AssureSpace(16 * 1024);
+        // 从BIO中读
         int bytes = BIO_read(bio, buf.WriteAddr(), buf.WritableSize());
         if (bytes <= 0)
             return;
@@ -156,9 +168,11 @@ bool DoSSLRead(SSL* ssl, std::string& out)
         char plainBuf[32 * 1024];
                     
         ERR_clear_error();
+        // 读数据到plainbuf中
         int bytes = SSL_read(ssl, plainBuf, sizeof plainBuf);
         if (bytes > 0)
         {
+            // 放到out中 返回
             out.append(plainBuf, bytes);
         }
         else

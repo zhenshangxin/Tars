@@ -26,6 +26,7 @@ int TimeWriteT::_dyeing = 0;
 
 /////////////////////////////////////////////////////////////////////////////////////
 
+// 默认构造
 RollWriteT::RollWriteT():_dyeingRollLogger(NULL), _maxSize(10000), _maxNum(1), _logPrx(NULL)
 {
 }
@@ -38,6 +39,7 @@ RollWriteT::~RollWriteT()
     }
 }
 
+// 调用操作符
 void RollWriteT::operator()(ostream &of, const deque<pair<int, string> > &ds)
 {
     vector<string> vRemoteDyeing;
@@ -47,9 +49,9 @@ void RollWriteT::operator()(ostream &of, const deque<pair<int, string> > &ds)
     {
         of << it->second;
 
-        //染色线程id不存在
         if(it->first != 0)
         {
+            // 存在要染色的线程ID
             if(!_dyeingRollLogger)
             {
                 string sDyeingDir = _logPath;
@@ -103,6 +105,7 @@ void RollWriteT::setDyeingLogInfo(const string &sApp, const string &sServer, con
 
     if(comm && !sLogObj.empty())
     {
+        // 获取远程日志的代理
         _logPrx = comm->stringToProxy<LogPrx>(sLogObj);
         //单独设置超时时间
         _logPrx->tars_timeout(3000);
@@ -121,9 +124,13 @@ void TarsRollLogger::setLogInfo(const string &sApp, const string &sServer, const
     //生成本地的日志目录
     TC_File::makeDirRecursive(_logpath + "/" + _app + "/" + _server);
 
+    // 初始化线程池 里面有一个线程 用来执行TC_LoggerThreadGroup::run()
+    // TC_LoggerThreadGroup对象
     _local.start(1);
 
     //初始化本地循环日志
+    // TC_Logger<RollWriteT, TC_RollBySize>对象
+    // roll 对象 传入最大大小 最大个数
     _logger.init(_logpath + "/" + _app + "/" + _server + "/" + _app + "." + _server, iMaxSize, iMaxNum);
     // 设置本地日志的开头格式 如（2017-12-21 10:41:11|27806|DEBUG|）
     _logger.modFlag(TC_DayLogger::HAS_TIME, false);
@@ -143,10 +150,12 @@ void TarsRollLogger::sync(bool bSync)
 {
     if(bSync)
     {
+        // 若是同步写日志 就关掉logger中的TC_LoggerThreadGroup
         _logger.unSetupThread();
     }
     else
     {
+        // 否则将本地线程组赋给它
         _logger.setupThread(&_local);
     }
 }

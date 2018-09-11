@@ -228,7 +228,6 @@ public:
             if(!_pInstance)
             {
                 // 若无实例
-
                 if(_destroyed)
                 {
                     // 若已经析构
@@ -240,7 +239,6 @@ public:
                 LifetimePolicy<T>::scheduleDestruction((T*)_pInstance, &destroySingleton);
             }
         }
-        
         return (T*)_pInstance;
     }
     
@@ -256,8 +254,9 @@ protected:
         _destroyed = true;
     }
 protected:
-
+    // 锁对象
     static TC_ThreadLock    _tl;
+    // 静态 对象的指针
     static volatile T*      _pInstance;
     static bool             _destroyed;
 
@@ -272,9 +271,11 @@ protected:
 template <class T, template<class> class CreatePolicy, template<class> class LifetimePolicy> 
 TC_ThreadLock TC_Singleton<T, CreatePolicy, LifetimePolicy>::_tl; 
 
+
 template <class T, template<class> class CreatePolicy, template<class> class LifetimePolicy> 
 bool TC_Singleton<T, CreatePolicy, LifetimePolicy>::_destroyed = false; 
 
+// 指针初始化为空
 template <class T, template<class> class CreatePolicy, template<class> class LifetimePolicy> 
 volatile T* TC_Singleton<T, CreatePolicy, LifetimePolicy>::_pInstance = NULL; 
 

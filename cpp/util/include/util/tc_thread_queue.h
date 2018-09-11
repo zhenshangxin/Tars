@@ -232,14 +232,18 @@ template<typename T, typename D> bool TC_ThreadQueue<T, D>::swap(queue_type &q, 
 {
     Lock lock(*this);
 
+    // 若本队列是空的
     if (_queue.empty())
     {
+
         if(millsecond == 0)
         {
+            // 若不等待 直接返回
             return false;
         }
         if(millsecond == (size_t)-1)
         {
+            // 一直等待
             wait();
         }
         else

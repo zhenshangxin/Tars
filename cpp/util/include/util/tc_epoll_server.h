@@ -73,6 +73,7 @@ public:
         PACKET_LESS = 0,
         PACKET_FULL = 1,
         PACKET_ERR  = -1,
+        PACKET_HEARTBEAT = 2,
     };
 
     enum EM_CLOSE_T
@@ -1229,7 +1230,7 @@ public:
             list_data                       *_vConn;
 
             /**
-             * 超时链表
+             * 超时链表 multimap 允许重复的键
              */
             multimap<time_t, uint32_t>      _tl;
 

@@ -89,10 +89,14 @@ protected:
 
 
 /**
+ * 循环日志 TLOGDEBUG、TLOGERROR等
+ *
  * 本地日志帮助类, 单件
  * 循环日志单件是永生不死的, 保证任何地方都可以使用
  * 当该对象析够以后, 则直接cout出来
  */
+// CreateUsingNew 使用new来创建
+// PhoneixLifetime 不是声明周期
 class TarsRollLogger : public TC_Singleton<TarsRollLogger, CreateUsingNew, PhoneixLifetime>
 {
 public:

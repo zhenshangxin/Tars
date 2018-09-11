@@ -43,6 +43,7 @@ int HttpImp::doRequest(TarsCurrentPtr current, vector<char> &buffer)
     TC_HttpResponse rsp;
     string s="hello";
     rsp.setResponse(s.c_str(),s.size());
+    // 将回复的包放入buffer 然后会自动回复
     rsp.encode(buffer);
    
     return 0;

@@ -61,6 +61,7 @@ public:
     {
         T ptr;
 
+        // 保存的是list的迭代器
         typename time_type::iterator timeIter;
     };
 
@@ -81,7 +82,9 @@ public:
      */
     TC_TimeoutQueue(int timeout = 5*1000,size_t size = 100 ) : _uniqId(0), _timeout(timeout) 
     {
+        // 指向list的最后一个元素
         _firstNoPopIter=_time.end();
+        // 增加hashmap中桶的数量 size为桶的数量
         _data.resize(size);
     }
 
@@ -168,10 +171,12 @@ protected:
     typename time_type::iterator    _firstNoPopIter;
 };
 
+// 获取到指定ID的数据
 template<typename T> T TC_TimeoutQueue<T>::get(uint32_t uniqId, bool bErase)
 {
     TC_LockT<TC_ThreadMutex> lock(*this);
 
+    // 从hash map 中取
     typename data_type::iterator it = _data.find(uniqId);
 
     if(it == _data.end())
@@ -183,6 +188,8 @@ template<typename T> T TC_TimeoutQueue<T>::get(uint32_t uniqId, bool bErase)
 
     if(bErase)
     {
+        // 释放掉此元素
+        // 若指向第一个没有被pop的数据的指针刚好指向这个数据 那么就将这个指针向后移动一位
         if(_firstNoPopIter == it->second.timeIter)
         {
             ++_firstNoPopIter;
@@ -194,6 +201,7 @@ template<typename T> T TC_TimeoutQueue<T>::get(uint32_t uniqId, bool bErase)
     return ptr;    
 }
 
+// 产生一个ID
 template<typename T> uint32_t TC_TimeoutQueue<T>::generateId()
 {
     TC_LockT<TC_ThreadMutex> lock(*this);
@@ -203,24 +211,27 @@ template<typename T> uint32_t TC_TimeoutQueue<T>::generateId()
     return _uniqId;
 }
 
+// 将消息插入到尾端
 template<typename T> bool TC_TimeoutQueue<T>::push(T& ptr, uint32_t uniqId)
 {
     TC_LockT<TC_ThreadMutex> lock(*this);
 
+    // 生成ptr info
     PtrInfo pi;
 
     pi.ptr = ptr;
 
     pair<typename data_type::iterator, bool> result;
-   
+    // 插入hash map 中
     result = _data.insert(make_pair(uniqId, pi));
 
     if (result.second == false) return false;
 
+    // 被插入节点的迭代器
     typename data_type::iterator it = result.first;
 
+    // 生成ni
     NodeInfo ni;
-
     struct timeval tv;
     TC_TimeProvider::getInstance()->getNow(&tv);
 
@@ -229,15 +240,17 @@ template<typename T> bool TC_TimeoutQueue<T>::push(T& ptr, uint32_t uniqId)
     ni.dataIter = it;
 
     ni.hasPoped = false;
-
+    // 将ni 放到队列最后
     _time.push_back(ni);
 
+    // 指向列表的最后一个元素 也就是刚刚被插入的那个元素
     typename time_type::iterator tmp = _time.end();
 
     --tmp;
 
     it->second.timeIter = tmp;
 
+    // 如果指向end 则让它指向最后一个元素 否则不变 也就是列表为空的情况下
     if (_firstNoPopIter == _time.end())
     {
         _firstNoPopIter = tmp;
@@ -246,8 +259,10 @@ template<typename T> bool TC_TimeoutQueue<T>::push(T& ptr, uint32_t uniqId)
     return true;
 }
 
+// 超时删除数据
 template<typename T> void TC_TimeoutQueue<T>::timeout()
 {
+    // 获取当前时间
     struct timeval tv;
     TC_TimeProvider::getInstance()->getNow(&tv);
 
@@ -257,14 +272,17 @@ template<typename T> void TC_TimeoutQueue<T>::timeout()
 
         typename time_type::iterator it = _time.begin();
 
+        // 开始遍历 若超过所设置的超时时间
         if(it != _time.end() && tv.tv_sec*(int64_t)1000+tv.tv_usec/1000-it->createTime>_timeout)
         {
+            // 删除
             _data.erase(it->dataIter);
 
             if(_firstNoPopIter == it)
-            {
+            {   // 若指向第一个没有被Pop 的数据的指针指向当前对象 则将此指针向后移动一位
                 ++_firstNoPopIter;
             }
+            // 然后再从list中释放此对象
             _time.erase(it);
         }
         else
@@ -274,6 +292,7 @@ template<typename T> void TC_TimeoutQueue<T>::timeout()
     }
 }
 
+// 超时删除数据 并使用df对数据进行处理
 template<typename T> void TC_TimeoutQueue<T>::timeout(data_functor &df)
 {
     struct timeval tv;
@@ -309,6 +328,7 @@ template<typename T> void TC_TimeoutQueue<T>::timeout(data_functor &df)
     }
 }
 
+// 删除数据
 template<typename T> T TC_TimeoutQueue<T>::erase(uint32_t uniqId)
 {
     TC_LockT<TC_ThreadMutex> lock(*this);
@@ -333,6 +353,7 @@ template<typename T> T TC_TimeoutQueue<T>::erase(uint32_t uniqId)
     return ptr;    
 }
 
+
 template<typename T> T TC_TimeoutQueue<T>::pop()
 {
     T ptr;
@@ -340,15 +361,19 @@ template<typename T> T TC_TimeoutQueue<T>::pop()
     return pop(ptr) ? ptr : NULL;
 }
 
+// 取出队列中的数据 但是没有删除
 template<typename T> bool TC_TimeoutQueue<T>::pop(T &ptr)
 {
     TC_LockT<TC_ThreadMutex> lock(*this);
 
+
+    // 列表为空 返回错误
     if(_time.empty())
     {
         return false;
     }
 
+    // 指向列表的头
     typename time_type::iterator it = _time.begin();
 
     if (it->hasPoped == true)
@@ -374,6 +399,7 @@ template<typename T> bool TC_TimeoutQueue<T>::pop(T &ptr)
     return true;
 }
 
+// 将数据拷贝到q中
 template<typename T> bool TC_TimeoutQueue<T>::swap(deque<T> &q)
 {
     TC_LockT<TC_ThreadMutex> lock(*this);
@@ -387,7 +413,7 @@ template<typename T> bool TC_TimeoutQueue<T>::swap(deque<T> &q)
 
     while(it != _time.end())
     {
-    
+        // 遍历
         if (it->hasPoped == true)
         {
             it = _firstNoPopIter;

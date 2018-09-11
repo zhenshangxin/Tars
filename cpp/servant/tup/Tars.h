@@ -48,7 +48,7 @@
 #define tars_likely(x)   (x)
 #endif
 #endif
-
+// 分支预测优化  此处！！是为了将其他的数字都转换为代表bool的0或1
 #ifndef tars_unlikely
 #if defined(__GNUC__) && __GNUC__ >= 4
 #define tars_unlikely(x)            (__builtin_expect(!!(x),0))
@@ -354,6 +354,7 @@ do { \
 namespace tars
 {
 //////////////////////////////////////////////////////////////////
+    // 所有结构体的基类
     struct TarsStructBase
     {
     protected:
@@ -362,6 +363,7 @@ namespace tars
         ~TarsStructBase() {}
     };
 
+    // 异常类
     struct TarsProtoException : public std::runtime_error
     {
         TarsProtoException(const std::string& s) : std::runtime_error(s) {}
@@ -423,7 +425,7 @@ namespace tars
                 eZeroTag = 12,
                 eSimpleList = 13,
             };
-
+            // __attribute__((packed)) 让编译器取消结构在编译过程中的优化对齐,按照实际占用字节数进行对齐 与#pragam pack(n) 是一样的
             struct helper
             {
                 uint8_t     type : 4;
@@ -451,10 +453,16 @@ namespace tars
             template<typename InputStreamT>
             size_t peekFrom(InputStreamT& is)
             {
+                // 读取一个helper
                 helper h;
                 size_t n = sizeof(h);
+                // peekBuf读取缓存 但是不改变偏移量
                 is.peekBuf(&h, sizeof(h));
+
+                //  读取类型
                 _type = h.type;
+                // 当Tag的值不超过14时，只需要用Tag 1就可以表示；当Tag的值超过14而小于256时，
+                // Tag 1固定为15，而用Tag 2表示Tag的值。Tag不允许大于255。
                 if (h.tag == 15)
                 {
                     is.peekBuf(&_tag, sizeof(_tag), sizeof(h));
@@ -492,6 +500,7 @@ namespace tars
             {
                 helper h;
                 h.type = type;
+                // 若tag小于15 则只写入helper
                 if (tag < 15)
                 {
                     h.tag = tag;
@@ -499,6 +508,7 @@ namespace tars
                 }
                 else
                 {
+                    // 否则再写入一个8位的tag
                     h.tag = 15;
                     os.writeBuf(&h, sizeof(h));
                     os.writeBuf(&tag, sizeof(tag));
@@ -509,7 +519,7 @@ namespace tars
 
 
 //////////////////////////////////////////////////////////////////
-/// 缓冲区读取器封装
+/// 缓冲区读取器封装  此类并不分配任何内存 使用的是set buffer 中的buffer的内存
     class BufferReader
     {
     public:
@@ -521,18 +531,22 @@ namespace tars
 
         BufferReader() : _buf(NULL),_buf_len(0),_cur(0) {}
 
+        // 偏移设为0
         void reset() { _cur = 0;}
 
-        /// 读取缓存
+        /// 读取缓存 读到buf总
         void readBuf(void * buf, size_t len)
         {
+
             if(len <= _buf_len && (_cur + len) <= _buf_len)
             {
+                // 缓冲区长度足够
                 peekBuf(buf, len);
                 _cur += len;
             }
             else
             {
+                // 缓冲区长度不足
                 char s[64];
                 snprintf(s, sizeof(s), "buffer overflow when skip, over %u.", (uint32_t)_buf_len);
                 throw TarsDecodeException(s);
@@ -544,10 +558,12 @@ namespace tars
         {
             if (_cur + offset + len > _buf_len)
             {
+                // 超出了缓冲区的容量
                 char s[64];
                 snprintf(s, sizeof(s), "buffer overflow when peekBuf, over %u.", (uint32_t)_buf_len);
                 throw TarsDecodeException(s);
             }
+            // Copy N bytes of SRC to DEST
             ::memcpy(buf, _buf + _cur + offset, len);
         }
 
@@ -580,6 +596,7 @@ namespace tars
             }
 
             const char* begin = _buf + _cur + offset;
+            // 赋值
             v.assign(begin, begin + len);
         }
 
@@ -606,7 +623,7 @@ namespace tars
             _cur = 0;
         }
 
-        /// 设置缓存
+        /// 设置缓存 缓存为vector char
         template<typename Alloc>
         void setBuffer(const std::vector<char,Alloc> &buf)
         {
@@ -622,14 +639,20 @@ namespace tars
         {
             return _cur >= _buf_len;
         }
+
+        // 返回当前位置
         size_t tellp() const
         {
             return _cur;
         }
+
+        // 返回buf的起始指针
         const char* base() const
         {
             return _buf;
         }
+
+        // 返回缓冲区的长度
         size_t size() const
         {
             return _buf_len;
@@ -650,6 +673,7 @@ namespace tars
 
         void reset() { _cur_m = 0; BufferReader::reset();}
 
+        // 返回当前位置的指针
         char* cur()
         {
             if (tars_unlikely(_buf_m == NULL))

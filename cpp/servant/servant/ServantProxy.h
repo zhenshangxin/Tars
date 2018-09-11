@@ -30,7 +30,7 @@ namespace tars
 
 /////////////////////////////////////////////////////////////////////////
 /*
- * seq 管理的类
+ * seq 管理的类 单向链表
  */
 class SeqManager
 {
@@ -77,7 +77,7 @@ class ServantProxyThreadData : public TC_ThreadPool::ThreadData
 public:
     static TC_ThreadMutex _mutex;  //全局的互斥锁
     static pthread_key_t  _key;    //私有线程数据key
-    static SeqManager *   _pSeq;   //生成seq的管理类
+    static SeqManager *   _pSeq;   //生成seq的管理类 全局唯一
 
     /**
      * 构造函数

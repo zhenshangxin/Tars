@@ -4,23 +4,23 @@ namespace tars
 {
 
 /**
- * server :默认鉴权逻辑
+ * server :榛樿閴存潈閫昏緫
  */
 bool processAuth(void* c, const string& data);
 
 /**
- * server :默认鉴权逻辑
+ * server :榛樿閴存潈閫昏緫
  */
 int processAuthReqHelper(const BasicAuthPackage& pkg, const BasicAuthInfo& info);
 
 /**
- * server :默认鉴权方法
+ * server :榛樿閴存潈鏂规硶
  */
 int defaultProcessAuthReq(const char* request, size_t len, const string& expectObj);
 int defaultProcessAuthReq(const string& request, const string& expectObj);
 
 /**
- * client:默认生成鉴权请求方法
+ * client:榛樿鐢熸垚閴存潈璇锋眰鏂规硶
  */
 string defaultCreateAuthReq(const BasicAuthInfo& info, const string& hashMethod = "sha1");
 

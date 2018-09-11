@@ -75,23 +75,26 @@ void AsyncProcThread::run()
         ReqMessage * msg = NULL;
 
         //异步请求回来的响应包处理
+
+        // 若队列为空 则等待
         if(_msgQueue->empty())
         {
             TC_ThreadLock::Lock lock(*this);
             timedWait(1000);
         }
 
+        //
         if (_msgQueue->pop_front(msg))
         {
             // 取出第一个ReqMessage
-            //从回调对象把线程私有数据传递到回调线程中
+
             ServantProxyThreadData * pServantProxyThreadData = ServantProxyThreadData::getData();
             assert(pServantProxyThreadData != NULL);
-
-            //把染色的消息设置在线程私有数据里面
+            // 根据ReqMessage来设置ServantProxyThreadData的染色信息
             pServantProxyThreadData->_dyeing  = msg->bDyeing;
             pServantProxyThreadData->_dyeingKey = msg->sDyeingKey;
 
+            // 拷贝被调用的adapter的地址信息到_szHost中
             if(msg->adapter)
             {
                    snprintf(pServantProxyThreadData->_szHost, sizeof(pServantProxyThreadData->_szHost), "%s", msg->adapter->endpoint().desc().c_str());
@@ -99,7 +102,9 @@ void AsyncProcThread::run()
 
             try
             {
+                // 放入智能指针中
                 ReqMessagePtr msgPtr = msg;
+                // 异步调用时的回调对象
                 msg->callback->onDispatch(msgPtr);
             }
             catch (exception& e)

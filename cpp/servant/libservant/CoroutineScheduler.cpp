@@ -51,6 +51,7 @@ rlimit stacksize_limit_()
     return limit;
 }
 
+// 获取栈大小的限制
 rlimit stacksize_limit()
 {
     static rlimit limit = stacksize_limit_();
@@ -59,12 +60,15 @@ rlimit stacksize_limit()
 
 std::size_t page_count( std::size_t stacksize)
 {
+    // 获取页的大小 std::ceil向上取整 获取页面的数量
     return static_cast< std::size_t >( std::ceil(static_cast< float >(stacksize) / pagesize() ) );
 }
 
 bool standard_stack_allocator::is_stack_unbound()
-{ 
-    return RLIM_INFINITY == stacksize_limit().rlim_max; 
+{
+    // RLIM_INFINITY代表无限制
+    // 判断栈大小的硬限制是否为无限制
+    return RLIM_INFINITY == stacksize_limit().rlim_max;
 }
 
 std::size_t standard_stack_allocator::default_stacksize()
@@ -89,27 +93,40 @@ std::size_t standard_stack_allocator::maximum_stacksize()
 
 int standard_stack_allocator::allocate( stack_context & ctx, std::size_t size)
 {
+    // 判断所请求的分配的栈的大小是否大于最小栈的大小
     assert( minimum_stacksize() <= size);
+    // 栈大小的硬限制是否为无限制或大于所请求的栈大小
     assert( is_stack_unbound() || ( maximum_stacksize() >= size) );
 
+    // 页面的数量加上一
     const std::size_t pages( page_count( size) + 1);
+    // 所有页面的大小
     const std::size_t size_( pages * pagesize() );
+    // 判断大于0
     assert( 0 < size && 0 < size_);
-
+    // 0表示让系统自己选定地址 映射成功后返回该地址
+    // size_表示将多达的空间映射到内存
+    // PROT_READ | PROT_WRITE 表示映射区可读可写
+    // MAP_PRIVATE 私有的映射 对此映射区域的修改 其他进程不可见 对应的文件也不会被修改
+    // MAP_ANON 建立匿名映射 不与任何文件关联
     void * limit = ::mmap( 0, size_, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
 
+    // 若返回值为-1  则分配内存失败
     if (limit == (void *) -1)
     {
         TLOGERROR("[TARS][[standard_stack_allocator::allocate memory failed]" << endl);
         return -1;
     }
 
+    // 将分配的内存设置为0
     std::memset( limit, '\0', size_);
 
+    // 改变第一页内存的权限 改为不能被获取
     const int result( ::mprotect( limit, pagesize(), PROT_NONE) );
     assert( 0 == result);
 
     ctx.size = size_;
+    // 第一页之后的位置
     ctx.sp = static_cast< char * >( limit) + ctx.size;
 
     return 0;
@@ -167,12 +184,15 @@ CoroutineInfo::~CoroutineInfo()
 
 void CoroutineInfo::registerFunc(const tars::TC_Callback<void ()> &callback)
 {
+    // 协程具体执行的函数
     _callback = callback;
 
+    // 协程初始化入口的函数
     _init_func.coroFunc = CoroutineInfo::corotineProc;
-
+    // 参数
     _init_func.args = this;
 
+    // 协程所在的上下文
     _ctx_to = make_fcontext(_stack_ctx.sp, _stack_ctx.size, CoroutineInfo::corotineEntry);
 
     jump_fcontext(&_ctx_from, _ctx_to, (intptr_t)this, false);
@@ -236,7 +256,9 @@ void CoroutineInfo::corotineProc(void * args)
 //////////////////////////////////////////////////////////////
 CoroutineScheduler::CoroutineScheduler()
 : _terminal(false)
+  // 协程池的大小
 , _poolSize(1000)
+  // 协程栈空间的大小
 , _stackSize(128*1024)
 , _currentSize(0)
 , _usedSize(0)
@@ -245,16 +267,24 @@ CoroutineScheduler::CoroutineScheduler()
 , _currentCoro(NULL)
 , _all_coro(NULL)
 {
+    // _all_coro为二级指针 指向一个CoroutineInfo*的数组
     _all_coro = new CoroutineInfo*[_poolSize+1];
     for(size_t i = 0; i <= _poolSize; ++i)
     {
+        // 将所有的指针都置为空
         _all_coro[i] = NULL;
     }
 
+    // 静态方法 链表初始化 将此链表的pre与next都指向自己
+    // 活跃的协程链表
     CoroutineInfo::CoroutineHeadInit(&_active);
+    // 可用的协程链表
     CoroutineInfo::CoroutineHeadInit(&_avail);
+    // 不活跃的协程链表
     CoroutineInfo::CoroutineHeadInit(&_inactive);
+    // 超时的协程链表
     CoroutineInfo::CoroutineHeadInit(&_timeout);
+    // 空闲的协程链表
     CoroutineInfo::CoroutineHeadInit(&_free);
 }
 
@@ -270,9 +300,12 @@ void CoroutineScheduler::init(uint32_t iPoolSize, size_t iStackSize)
     }
 
     _terminal = false;
+    // 协程池的大小
     _poolSize = iPoolSize;
+
     _stackSize = iStackSize;
 
+    // 设置当前已经创建的协程数 最多先创建100个
     if(_poolSize <= 100)
     {
         _currentSize = _poolSize;
@@ -282,6 +315,7 @@ void CoroutineScheduler::init(uint32_t iPoolSize, size_t iStackSize)
         _currentSize = 100;
     }
 
+    // 判断all_coro是否初始化
     if(_all_coro != NULL)
     {
         delete [] _all_coro;
@@ -292,15 +326,19 @@ void CoroutineScheduler::init(uint32_t iPoolSize, size_t iStackSize)
         }
     }
 
+    // 正在使用的协程数
     _usedSize = 0;
+    // 产生协程ID的变量
     _uniqId = 0;
 
     int iSucc = 0;
     for(size_t i = 0; i < _currentSize; ++i)
     {
+        // 新建CoroutineInfo 链表的节点
         CoroutineInfo *coro = new CoroutineInfo(this);
-
+        // 协程使用的栈内容信息
         stack_context s_ctx;
+        // 分配栈内存
         int ret = _alloc.allocate(s_ctx, iStackSize);
         if(ret != 0)
         {
@@ -311,28 +349,32 @@ void CoroutineScheduler::init(uint32_t iPoolSize, size_t iStackSize)
             break;
         }
 
+        // 设置协程的内存空间
         coro->setStackContext(s_ctx);
-
+        // 生成协程ID
         uint32_t iId = generateId();
+        // 设置协程ID
         coro->setUid(iId);
+        // 设置为空闲的协程
         coro->setStatus(CORO_FREE);
 
-        //_free.push_front(coro);
 
-        //_all.insert(make_pair(coro->getUid(), coro));
-
+        // 插入数组中
         _all_coro[iId] = coro;
 
+        // 插入到free的尾部
         CoroutineInfo::CoroutineAddTail(coro, &_free);
 
         ++iSucc;
     }
-
+    // 成功创建的协程数
     _currentSize = iSucc;
 
+    // 主协程 ID为0
     _mainCoro.setUid(0);
     _mainCoro.setStatus(CORO_FREE);
 
+    // 将当前运行的协程设置为主协程
     _currentCoro = &_mainCoro;
 
     TLOGDEBUG("[TARS][CoroutineScheduler::init iPoolSize:" << _poolSize << "|iCurrentSize:" << _currentSize << "|iStackSize:" << _stackSize << endl);
@@ -340,6 +382,7 @@ void CoroutineScheduler::init(uint32_t iPoolSize, size_t iStackSize)
 
 int    CoroutineScheduler::increaseCoroPoolSize()
 {
+    // 再创建100个协程
     int iInc = ((_poolSize - _currentSize) > 100) ? 100 : (_poolSize - _currentSize);
     if(iInc <= 0)
     {
@@ -386,27 +429,34 @@ int    CoroutineScheduler::increaseCoroPoolSize()
     return 0;
 }
 
+// 创建协程 返回协程的ID
 uint32_t CoroutineScheduler::createCoroutine(const tars::TC_Callback<void ()> &callback)
 {
+    // 若正在使用的协程数量大于创建的协程数量 或没有空闲的协程
     if(_usedSize >= _currentSize || CoroutineInfo::CoroutineHeadEmpty(&_free))
     {
+        // 创建新的协程
         int iRet = increaseCoroPoolSize();
 
         if(iRet != 0)
             return 0;
     }
 
+    // 获取free的下一个 若将free看做时队列的第一位 则获取的是第二位
     CoroutineInfo *coro = _free._next;
     assert(coro != NULL);
 
+    // 从free中删除
     CoroutineInfo::CoroutineDel(coro);
 
+    // 正在使用的协程数加一
     _usedSize++;
 
     coro->setStatus(CORO_AVAIL);
 
     CoroutineInfo::CoroutineAddTail(coro, &_avail);
 
+    // 注册回调函数
     coro->registerFunc(callback);
 
     return coro->getUid();

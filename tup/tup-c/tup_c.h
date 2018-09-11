@@ -27,7 +27,7 @@ typedef struct UniAttribute UniAttribute;
 typedef struct UniPacket    UniPacket;
 typedef struct UniPacket    TarsUniPacket;
 
-//ÊôĞÔ·â×°
+//å±æ€§å°è£…
 struct UniAttribute
 {
 	JMapWrapper 	*_data;
@@ -37,9 +37,9 @@ struct UniAttribute
 	JMapWrapper     *m_data;  	//encode decode helper
 	TarsOutputStream *os_string;	//encode decode helper
 
-	short			_iVer;		//TUP°æ±¾µÄ±êÊ¾(2:±êÊ¾ÆÕÍ¨TUPĞ­Òé£¬3:±êÊ¾¾«¼òTUPĞ­Òé)
+	short			_iVer;		//TUPç‰ˆæœ¬çš„æ ‡ç¤º(2:æ ‡ç¤ºæ™®é€šTUPåè®®ï¼Œ3:æ ‡ç¤ºç²¾ç®€TUPåè®®)
 
-	Int32           _iDecPacketLen;//½âÂëµÄ°ü³¤
+	Int32           _iDecPacketLen;//è§£ç çš„åŒ…é•¿
 	char _sLastError[32];
 };
 
@@ -125,7 +125,7 @@ Int32 UniAttribute_decode(UniAttribute * pack, const char* buff, uint32_t len);
 
 Int32 UniAttribute_size(UniAttribute * pack);
 ///////////////////////////////////////////////////////////////
-//ÇëÇó»ØÓ¦°ü·â×°
+//è¯·æ±‚å›åº”åŒ…å°è£…
 struct UniPacket
 {
 	UniAttribute attr;

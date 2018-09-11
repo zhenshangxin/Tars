@@ -71,11 +71,22 @@ public:
             return TC_EpollServer::PACKET_LESS;
         }
 
+        // 将string中包含的二进制数据转换为int
         tars::Int32 iHeaderLen;
 
         memcpy(&iHeaderLen, in.c_str(), sizeof(tars::Int32));
 
         iHeaderLen = ntohl(iHeaderLen);
+
+        // 心跳包 自己加上的
+        if (iHeaderLen == sizeof(tars::Int32)) {
+
+            out = in.substr(0, sizeof(tars::Int32));
+
+            in  = in.substr(sizeof(tars::Int32));
+
+            return TC_EpollServer::PACKET_HEARTBEAT;
+        }
 
         if(iHeaderLen < tars::Int32(sizeof(tars::Int32))|| iHeaderLen > iMaxLength)
         {

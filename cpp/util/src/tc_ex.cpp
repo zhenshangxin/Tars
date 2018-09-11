@@ -48,9 +48,13 @@ const char* TC_Exception::what() const throw()
 void TC_Exception::getBacktrace()
 {
     void * array[64];
+
+    // 获取当前的调用栈信息
     int nSize = backtrace(array, 64);
+    // 转化为对应的描述
     char ** symbols = backtrace_symbols(array, nSize);
 
+    // 将这些信息
     for (int i = 0; i < nSize; i++)
     {
         _buffer += symbols[i];

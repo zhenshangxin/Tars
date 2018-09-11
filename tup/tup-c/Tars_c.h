@@ -74,13 +74,13 @@ typedef long long   Int64;
 #define TarsFree(p)             free(p);
 #endif
 
-//·µ»ØÖµ¶¨Òå
-extern const Int32 TARS_SUCCESS        ;      //³É¹¦
-extern const Int32 TARS_ATTR_NOT_FOUND ;      //²éÕÒ²»µ½Ïà¹ØÊôĞÔ
-extern const Int32 TARS_ENCODE_ERROR   ;      //±àÂë´íÎó
-extern const Int32 TARS_DECODE_ERROR   ;      //½âÂë´íÎó
-extern const Int32 TARS_RUNTIME_ERROR  ;      //ÆäËûÔËĞĞÊ±´íÎó
-extern const Int32 TARS_MALLOC_ERROR   ;      //ÄÚ´æÉêÇëÊ§°Ü´íÎó
+//è¿”å›å€¼å®šä¹‰
+extern const Int32 TARS_SUCCESS        ;      //æˆåŠŸ
+extern const Int32 TARS_ATTR_NOT_FOUND ;      //æŸ¥æ‰¾ä¸åˆ°ç›¸å…³å±æ€§
+extern const Int32 TARS_ENCODE_ERROR   ;      //ç¼–ç é”™è¯¯
+extern const Int32 TARS_DECODE_ERROR   ;      //è§£ç é”™è¯¯
+extern const Int32 TARS_RUNTIME_ERROR  ;      //å…¶ä»–è¿è¡Œæ—¶é”™è¯¯
+extern const Int32 TARS_MALLOC_ERROR   ;      //å†…å­˜ç”³è¯·å¤±è´¥é”™è¯¯
 
 #ifndef TARS_MAX_STRING_LENGTH
 #define TARS_MAX_STRING_LENGTH   (100 * 1024 * 1024)
@@ -129,7 +129,7 @@ struct JStructBase
     Int32 (*readFrom)(void*, TarsInputStream *);
 };
 
-//string·â×°
+//stringå°è£…
 struct JString
 {
     char *        _data;
@@ -166,16 +166,16 @@ Int32 JString_init(JString *s);
 JString * JString_new(void);
 
 
-//Êı×é·â×°
+//æ•°ç»„å°è£…
 struct JArray
 {
-    char *   elem_type_name;//ÀàĞÍÃû³Æ
+    char *   elem_type_name;//ç±»å‹åç§°
     unsigned elem_num;
     unsigned list_len;
     int *    list;
     unsigned buff_used;
     unsigned buff_len;
-    char *   buff;          //ÔªËØµÄtars±àÂë½á¹û
+    char *   buff;          //å…ƒç´ çš„tarsç¼–ç ç»“æœ
 };
 
 void JArray_del(JArray ** arr);
@@ -207,7 +207,7 @@ JArray * JArray_new(const char * type);
 
 
 
-//map·â×°
+//mapå°è£…
 struct JMapWrapper
 {
     JArray * first;
@@ -255,31 +255,31 @@ enum
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-//»º³åÇø¶ÁĞ´Æ÷·â×°
+//ç¼“å†²åŒºè¯»å†™å™¨å°è£…
 struct TarsStream
 {
-    JString     *    _buf;       //< »º³åÇø
-    uint32_t         _cur;       //< µ±Ç°Î»ÖÃ
-    char             _err[32];   //< ´íÎóÃèÊö
-    DataHead    *    _h;         //< ¸¨ÖúĞ­ÒéÍ·½âÎö
+    JString     *    _buf;       //< ç¼“å†²åŒº
+    uint32_t         _cur;       //< å½“å‰ä½ç½®
+    char             _err[32];   //< é”™è¯¯æè¿°
+    DataHead    *    _h;         //< è¾…åŠ©åè®®å¤´è§£æ
 };
 
 /*
-/// »º³åÇø¶ÁÈ¡Æ÷·â×°
+/// ç¼“å†²åŒºè¯»å–å™¨å°è£…
 struct TarsInputStream
 {
-    JString     *    _buf;       //< »º³åÇø
-    uint32_t         _cur;       //< µ±Ç°Î»ÖÃ
-    char             _err[32];  //< ´íÎóÃèÊö
-    DataHead    *    _h;         //  ¸¨ÖúĞ­ÒéÍ·½âÎö
+    JString     *    _buf;       //< ç¼“å†²åŒº
+    uint32_t         _cur;       //< å½“å‰ä½ç½®
+    char             _err[32];  //< é”™è¯¯æè¿°
+    DataHead    *    _h;         //  è¾…åŠ©åè®®å¤´è§£æ
 };
 
 ////////////////////////////////////////////////////////////////////////////
-/// »º³åÇøĞ´ÈëÆ÷·â×°
+/// ç¼“å†²åŒºå†™å…¥å™¨å°è£…
 struct  TarsOutputStream
 {
-    JString    * _buf;      //< »º³åÇø
-    char       _err[32];   //< ´íÎóÃèÊö
+    JString    * _buf;      //< ç¼“å†²åŒº
+    char       _err[32];   //< é”™è¯¯æè¿°
     DataHead   * _h;
 };
 */
@@ -313,16 +313,16 @@ uint8_t DataHead_getTag(DataHead * head);
 uint8_t DataHead_getType(DataHead * head);
 //void DataHead_setType(DataHead * head, uint8_t t);
 
-/// ¶ÁÈ¡Í·ĞÅÏ¢£¬µ«²»Ç°ÒÆÁ÷µÄÆ«ÒÆÁ¿
+/// è¯»å–å¤´ä¿¡æ¯ï¼Œä½†ä¸å‰ç§»æµçš„åç§»é‡
 Int32 DataHead_peekFrom(DataHead * head, TarsInputStream* is, uint32_t *n);
 
-/// ¶ÁÈ¡Êı¾İÍ·ĞÅÏ¢
+/// è¯»å–æ•°æ®å¤´ä¿¡æ¯
 Int32 DataHead_readFrom(DataHead * head, TarsInputStream* is);
 
-/// Ğ´ÈëÊı¾İÍ·ĞÅÏ¢
+/// å†™å…¥æ•°æ®å¤´ä¿¡æ¯
 Int32 DataHead_writeTo(DataHead * head, TarsOutputStream* os);
 
-//ÉèÖÃtype tag ²¢Ğ´µ½os
+//è®¾ç½®type tag å¹¶å†™åˆ°os
 Int32 DataHead_setAndWriteTo(DataHead * head, unsigned int type, unsigned int tag,TarsOutputStream* os);
  
  
@@ -335,29 +335,29 @@ void TarsInputStream_del(TarsInputStream ** is);
 
 void TarsInputStream_reset(TarsInputStream * is);
 
-/// ¶ÁÈ¡»º´æ
+/// è¯»å–ç¼“å­˜
 Int32 TarsInputStream_readBuf(TarsInputStream * is, void * buf, uint32_t len);
 
-/// ¶ÁÈ¡»º´æ£¬µ«²»¸Ä±äÆ«ÒÆÁ¿
+/// è¯»å–ç¼“å­˜ï¼Œä½†ä¸æ”¹å˜åç§»é‡
 Int32 TarsInputStream_peekBuf(TarsInputStream * is, void * buf, uint32_t len, uint32_t offset);
 
-/// Ìø¹ılen¸ö×Ö½Ú
+/// è·³è¿‡lenä¸ªå­—èŠ‚
 Int32 TarsInputStream_skip(TarsInputStream * is, uint32_t len);
 
-/// ÉèÖÃ»º´æ
+/// è®¾ç½®ç¼“å­˜
 Int32 TarsInputStream_setBuffer(TarsInputStream * is, const char * buf, uint32_t len);
 
 
-/// Ìøµ½Ö¸¶¨±êÇ©µÄÔªËØÇ°
+/// è·³åˆ°æŒ‡å®šæ ‡ç­¾çš„å…ƒç´ å‰
 Int32 TarsInputStream_skipToTag(TarsInputStream * is, uint8_t tag);
 
-/// Ìøµ½µ±Ç°½á¹¹µÄ½áÊø
+/// è·³åˆ°å½“å‰ç»“æ„çš„ç»“æŸ
 Int32 TarsInputStream_skipToStructEnd(TarsInputStream * is);
 
-/// Ìø¹ıÒ»¸ö×Ö¶Î
+/// è·³è¿‡ä¸€ä¸ªå­—æ®µ
 Int32 TarsInputStream_skipField(TarsInputStream * is);
 
-/// Ìø¹ıÒ»¸ö×Ö¶Î£¬²»°üº¬Í·ĞÅÏ¢
+/// è·³è¿‡ä¸€ä¸ªå­—æ®µï¼Œä¸åŒ…å«å¤´ä¿¡æ¯
 Int32 TarsInputStream_skipFieldByType(TarsInputStream * is, uint8_t type);
 
 Int32 TarsInputStream_checkValid(TarsInputStream * is, uint8_t tag, Bool isRequire);
@@ -396,7 +396,7 @@ Int32 TarsInputStream_readVector(TarsInputStream * is, JArray* v, uint8_t tag, B
 
 Int32 TarsInputStream_readVectorChar(TarsInputStream * is, JString *v, uint8_t tag, Bool isRequire);
 
-/// ¶ÁÈ¡½á¹¹
+/// è¯»å–ç»“æ„
 Int32 TarsInputStream_readStruct(TarsInputStream * is, void *st, uint8_t tag, Bool isRequire);
 
 Int32 TarsInputStream_readStructString(TarsInputStream * is, JString * st, uint8_t tag, Bool isRequire);

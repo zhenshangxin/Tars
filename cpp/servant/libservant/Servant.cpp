@@ -127,6 +127,7 @@ void CallbackThreadData::destructor(void* p)
 
 CallbackThreadData * CallbackThreadData::getData()
 {
+    // 创建key
     if(_key == 0)
     {
         TC_LockT<TC_ThreadMutex> lock(_mutex);
@@ -160,13 +161,16 @@ CallbackThreadData * CallbackThreadData::getData()
 
 void CallbackThreadData::setResponseContext(const map<std::string, std::string> & context)
 {
+    // 设置返回的context合法
     _contextValid = true;
     if(context.empty())
     {
+        // 若context为空 则清空自己的context
         _responseContext.clear();
     }
     else
     {
+        // 否则复制这个context
         _responseContext = context;
     }
 }

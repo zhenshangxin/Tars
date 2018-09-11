@@ -313,6 +313,7 @@ void QueryEpBase::refreshReg(GetEndpointType type, const string & sName)
     //正在请求状态 而且请求超时了，或者第一次
     if(_requestRegistry && _requestTimeout < iNow)
     {
+        // 请求主控异常
         doEndpointsExp(0);
     }
 
@@ -750,7 +751,7 @@ void EndpointManager::doNotify()
 bool EndpointManager::selectAdapterProxy(ReqMessage * msg,AdapterProxy * & pAdapterProxy)
 {
     pAdapterProxy = NULL;
-    //刷新主控
+    //刷新主控 父类方法
     refreshReg(E_DEFAULT,"");
 
     //无效的数据 返回true
@@ -1838,6 +1839,7 @@ void EndpointThread::update(const set<EndpointInfo> & active, const set<Endpoint
     }
 }
 /////////////////////////////////////////////////////////////////////////////
+// 对外获取路由请求的封装类
 EndpointManagerThread::EndpointManagerThread(Communicator * pComm,const string & sObjName)
 :_communicator(pComm)
 ,_objName(sObjName)

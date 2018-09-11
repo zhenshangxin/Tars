@@ -80,14 +80,19 @@ struct hash_new<string>
 {
     size_t operator()(const string &s) const
     {
+        // 获取字符串的起始指针
         const char *ptr= s.c_str();
+        // 获取字符串的长度
         size_t key_length = s.length();
         uint32_t value= 0;
         
         while (key_length--) 
         {
+            // value 加上当前字符的值
             value += *ptr++;
+            // value加上Value左移10位
             value += (value << 10);
+            // 逐位非或
             value ^= (value >> 6);
         }
         value += (value << 3);

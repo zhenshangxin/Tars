@@ -35,6 +35,7 @@ namespace tars
 
         unSetupThread();
 
+        // 加锁 向ThreadGroup中插入自己
         TC_LockT<TC_ThreadMutex> lock(_mutex);
 
         _pThreadGroup = pThreadGroup;
@@ -46,19 +47,22 @@ namespace tars
 
     void TC_LoggerRoll::unSetupThread()
     {
+        // 加锁
         TC_LockT<TC_ThreadMutex> lock(_mutex);
 
         if (_pThreadGroup != NULL)
         {
+            // 先清空buffer中的数据 将他们写入到文件中
             _pThreadGroup->flush();
 
             TC_LoggerRollPtr self = this;
 
+            // 从ThreadGroup中去掉自己
             _pThreadGroup->unRegisterLogger(self);
 
             _pThreadGroup = NULL;
         }
-
+        // 刷新
         flush();
     }
 
@@ -67,18 +71,24 @@ namespace tars
         pthread_t ThreadID = 0;
         if (_bDyeingFlag)
         {
-            TC_LockT<TC_ThreadMutex> lock(_mutexDyeing);
+            //  若开启了染色
 
+            TC_LockT<TC_ThreadMutex> lock(_mutexDyeing);
+            // 获取当前的线程ID
             pthread_t tmp = pthread_self();
             //if (_setThreadID.count(tmp) == 1)
+
+            // 统计hash_map是否出现了tmp 要么是1（即出现了该元素），要么是0（即没出现这样的元素）
             if (_mapThreadID.count(tmp) == 1)
             {
                 ThreadID = tmp;
             }
         }
 
+        // 若有线程组了
         if (_pThreadGroup)
         {
+            // 插入线程ID 和要写的内容
             _buffer.push_back(make_pair(ThreadID, buffer.second));
         }
         else
@@ -86,23 +96,29 @@ namespace tars
             //同步记录日志
             deque<pair<int, string> > ds;
             ds.push_back(make_pair(ThreadID, buffer.second));
+            // 记日志并滚动
             roll(ds);
         }
     }
 
     void TC_LoggerRoll::flush()
     {
+        // 新建一个队列
         TC_ThreadQueue<pair<int, string> >::queue_type qt;
+        // 交换两个队列
         _buffer.swap(qt);
 
+        // 若qt不为空
         if (!qt.empty())
         {
+            // 记录日志
             roll(qt);
         }
     }
 
 //////////////////////////////////////////////////////////////////
 //
+    // 写日志线程组
     TC_LoggerThreadGroup::TC_LoggerThreadGroup() : _bTerminate(false)
     {
     }
@@ -115,33 +131,42 @@ namespace tars
 
         {
             Lock lock(*this);
+            // 通知其他线程
             notifyAll();
         }
 
+        // 停止线程池
         _tpool.stop();
         _tpool.waitForAllDone();
     }
 
     void TC_LoggerThreadGroup::start(size_t iThreadNum)
     {
+        // 初始化线程池 创建线程
         _tpool.init(iThreadNum);
+        // 启动
         _tpool.start();
 
+        // 包装TC_LoggerThreadGroup的run函数
         TC_Functor<void> cmd(this, &TC_LoggerThreadGroup::run);
         TC_Functor<void>::wrapper_type wrapper(cmd);
+
         for (size_t i = 0; i < _tpool.getThreadNum(); i++)
         {
+            // 将此函数添加到任务队列中执行
             _tpool.exec(wrapper);
         }
     }
 
+    // 注册一个loggerRoll对象
     void TC_LoggerThreadGroup::registerLogger(TC_LoggerRollPtr &l)
     {
         Lock lock(*this);
-
+        // 在logger set中插入此对象
         _logger.insert(l);
     }
 
+    // 删除一个logger对象
     void TC_LoggerThreadGroup::unRegisterLogger(TC_LoggerRollPtr &l)
     {
         Lock lock(*this);
@@ -151,13 +176,16 @@ namespace tars
 
     void TC_LoggerThreadGroup::flush()
     {
+        // logger roll 的set
         logger_set logger;
 
         {
+            // 获取logger set
             Lock lock(*this);
             logger = _logger;
         }
 
+        // 遍历 flush每一个
         logger_set::iterator it = logger.begin();
         while (it != logger.end())
         {
@@ -182,6 +210,7 @@ namespace tars
                 timedWait(100);
             }
 
+            // 不停的flush 每一个
             flush();
         }
     }
@@ -200,8 +229,9 @@ namespace tars
         //设置put buffer
         if (_roll)
         {
-            //分配空间
+            //分配空间 char* 设置缓冲区的大小
             _buffer = new char[_buffer_len];
+            // 设置输出的缓冲区的区间
             setp(_buffer, _buffer + _buffer_len);
         }
         else

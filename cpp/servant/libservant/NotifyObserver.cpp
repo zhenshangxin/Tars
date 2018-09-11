@@ -70,6 +70,7 @@ void NotifyObserver::unregisterNotify(const string& command, BaseNotify* obj)
 
 void NotifyObserver::registerPrefix(const string& command, BaseNotify* obj)
 {
+    // 在prefix中对应的command条目中插入obj
     registerObject(command, obj, _prefix);
 }
 
@@ -80,8 +81,11 @@ void NotifyObserver::unregisterPrefix(const string& command, BaseNotify* obj)
 
 string NotifyObserver::notify(const string& command, TarsCurrentPtr current)
 {
+    // 加锁
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
+
+    // 解析命令与参数
     string str    = TC_Common::trim(command);
 
     string name   = str;
@@ -97,28 +101,34 @@ string NotifyObserver::notify(const string& command, TarsCurrentPtr current)
         params = str.substr(pos + 1);
     }
 
-    ostringstream os;
 
+
+    ostringstream os;
+    // 前置处理器中查找 命令的名字
     map<string, set<BaseNotify*> >::iterator it = _prefix.find(name);
 
     if (it != _prefix.end())
     {
+        // 找到了
         set<BaseNotify*>& sbn = it->second;
 
         os << "[notify prefix object num:" << sbn.size() << "]" << endl;
 
         int i = 0;
 
+        // 遍历set
         for (set<BaseNotify*>::iterator sit = sbn.begin(); sit != sbn.end(); ++sit)
         {
             string result = "";
-
+            // 通知每一个
             if ((*sit)->notify(name, params, current, result))
             {
+                // 成功 保存结果
                 os << "[" << ++i << "]:" << result << endl;
             }
             else
             {
+                // 失败 返回
                 os << "[notify break by server]:" << endl;
                 os << result << endl;
 
@@ -127,16 +137,18 @@ string NotifyObserver::notify(const string& command, TarsCurrentPtr current)
         }
     }
 
+    // 在普通处理器中查找名字
     it = _notifys.find(name);
 
     if (it != _notifys.end())
     {
+        // 找到了
         set<BaseNotify*>& sbn = it->second;
 
         os << "[notify servant object num:" << sbn.size() << "]" << endl;
 
         int i = 0;
-
+        // 遍历查找每一个
         for (set<BaseNotify*>::iterator sit = sbn.begin(); sit != sbn.end(); ++sit)
         {
             string result = "";

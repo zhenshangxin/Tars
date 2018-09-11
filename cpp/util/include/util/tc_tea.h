@@ -31,7 +31,7 @@ namespace tars
 /////////////////////////////////////////////////
 /**
  * @file tc_tea.h 
- * @brief tea¼Ó½âÃÜÀà(ĞŞ¸ÄÖÁc°æ±¾) . 
+ * @brief teaåŠ è§£å¯†ç±»(ä¿®æ”¹è‡³cç‰ˆæœ¬) . 
  *  
  */
 /////////////////////////////////////////////////
@@ -39,7 +39,7 @@ namespace tars
 	
 	
 /**
- * @brief ¼ÓÃÜÒì³£Àà
+ * @brief åŠ å¯†å¼‚å¸¸ç±»
  */	           
 struct TC_Tea_Exception : public TC_Exception
 {
@@ -48,123 +48,123 @@ struct TC_Tea_Exception : public TC_Exception
 };
 
 /**
- * @brief teaËã·¨£¬Í¨³£ÓÃµÚ¶ş´úËã·¨ 
+ * @brief teaç®—æ³•ï¼Œé€šå¸¸ç”¨ç¬¬äºŒä»£ç®—æ³• 
  */
 class TC_Tea
 {
 public:
     /**
-     * @brief µÚÒ»´ú¼ÓÃÜ.
+     * @brief ç¬¬ä¸€ä»£åŠ å¯†.
      *
-     * @param key      ¼ÓÃÜµÄkey, 16¸ö×Ö½Ú 
-     * @param sIn      ÊäÈëbuffer 
-	 * @param iLength  ÊäÈëbuffer³¤¶È 
-     * @return         vector<char>, ¼ÓÃÜºó¶ş½øÖÆ´®
+     * @param key      åŠ å¯†çš„key, 16ä¸ªå­—èŠ‚ 
+     * @param sIn      è¾“å…¥buffer 
+	 * @param iLength  è¾“å…¥bufferé•¿åº¦ 
+     * @return         vector<char>, åŠ å¯†åäºŒè¿›åˆ¶ä¸²
      */
     static vector<char> encrypt(const char *key, const char *sIn, size_t iLength);
 
 	/**
-	 * @brief µÚÒ»´ú½âÃÜ.
+	 * @brief ç¬¬ä¸€ä»£è§£å¯†.
      *   
-     * @param key       ½âÃÜµÄkey, 16¸ö×Ö½Ú 
-     * @param sIn       ĞèÒª½âÃÜµÄbuffer 
-     * @param iLength   buffer³¤¶È 
-	 * @throw           TC_Tea_Exception, ½âÃÜÊ§°Ü»áÅ×³öÒì³£ 
-     * @return          vector<char>, ½âÃÜºóÊı¾İ
+     * @param key       è§£å¯†çš„key, 16ä¸ªå­—èŠ‚ 
+     * @param sIn       éœ€è¦è§£å¯†çš„buffer 
+     * @param iLength   bufferé•¿åº¦ 
+	 * @throw           TC_Tea_Exception, è§£å¯†å¤±è´¥ä¼šæŠ›å‡ºå¼‚å¸¸ 
+     * @return          vector<char>, è§£å¯†åæ•°æ®
 	 */
 	static vector<char> decrypt(const char *key, const char *sIn, size_t iLength);
 
     /**
-     * @brief µÚ¶ş´ú¼ÓÃÜ.
+     * @brief ç¬¬äºŒä»£åŠ å¯†.
      *
-     * @param key       ¼ÓÃÜµÄkey, 16¸ö×Ö½Ú 
-     * @param sIn       ÊäÈëbuffer 
-	 * @param iLength   ÊäÈëbuffer³¤¶È 
-     * @return          vector<char>, ¼ÓÃÜºó¶ş½øÖÆ´®
+     * @param key       åŠ å¯†çš„key, 16ä¸ªå­—èŠ‚ 
+     * @param sIn       è¾“å…¥buffer 
+	 * @param iLength   è¾“å…¥bufferé•¿åº¦ 
+     * @return          vector<char>, åŠ å¯†åäºŒè¿›åˆ¶ä¸²
      */
     static vector<char> encrypt2(const char *key, const char *sIn, size_t iLength);
 
 	/**
-	 * @brief µÚ¶ş´ú½âÃÜ.
+	 * @brief ç¬¬äºŒä»£è§£å¯†.
      *   
-     * @param key      ½âÃÜµÄkey, 16¸ö×Ö½Ú 
-     * @param sIn      ĞèÒª½âÃÜµÄbuffer 
-     * @param iLength  buffer³¤¶È 
-	 * @throw          TC_Tea_Exception, ½âÃÜÊ§°Ü»áÅ×³öÒì³£ 
-     * @return         vector<char>, ½âÃÜºóÊı¾İ
+     * @param key      è§£å¯†çš„key, 16ä¸ªå­—èŠ‚ 
+     * @param sIn      éœ€è¦è§£å¯†çš„buffer 
+     * @param iLength  bufferé•¿åº¦ 
+	 * @throw          TC_Tea_Exception, è§£å¯†å¤±è´¥ä¼šæŠ›å‡ºå¼‚å¸¸ 
+     * @return         vector<char>, è§£å¯†åæ•°æ®
 	 */
 	static vector<char> decrypt2(const char *key, const char *sIn, size_t iLength);
 
 protected:
     /**
-     * @brief ¼ÓÃÜÔËËãÒ»¸ö¿é.
+     * @brief åŠ å¯†è¿ç®—ä¸€ä¸ªå—.
      * 
-     * @param pInBuf   8¸ö×Ö½Ú  
-     * @param pKey     16¸ö×Ö½ÚµÄkey
-     * @param pOutBuf  Êä³ö8¸ö×Ö½ÚµÄ½á¹û
+     * @param pInBuf   8ä¸ªå­—èŠ‚  
+     * @param pKey     16ä¸ªå­—èŠ‚çš„key
+     * @param pOutBuf  è¾“å‡º8ä¸ªå­—èŠ‚çš„ç»“æœ
      */
     static void TeaEncryptECB(const char *pInBuf, const char *pKey, char *pOutBuf);
 
     /**
-     * @brief ½âÃÜÔËËãÒ»¸ö¿é.
+     * @brief è§£å¯†è¿ç®—ä¸€ä¸ªå—.
      * 
-     * @param pInBuf   8¸ö×Ö½Ú  
-     * @param pKey     16¸ö×Ö½ÚµÄkey
-     * @param pOutBuf  Êä³ö8¸ö×Ö½ÚµÄ½á¹û
+     * @param pInBuf   8ä¸ªå­—èŠ‚  
+     * @param pKey     16ä¸ªå­—èŠ‚çš„key
+     * @param pOutBuf  è¾“å‡º8ä¸ªå­—èŠ‚çš„ç»“æœ
      */
     static void TeaDecryptECB(const char *pInBuf, const char *pKey, char *pOutBuf);
 
     /**
-     * @brief ¼ÓÃÜ.
+     * @brief åŠ å¯†.
      * 
-     * @param pInBuf       ¼ÓÃÜµÄÃ÷ÎÄ²¿·Ö(Body)
-     * @param nInBufLen    ³¤¶È
-     * @param pKey         key ±ØĞëÊÇ¿É¼û×Ö·û
-	 * @param pOutBuf      ¼ÓÃÜºóµÄÃ÷ÎÄ²¿·Ö 
-     * @param pOutBufLen   ¼ÓÃÜºóµÄ³¤¶È
+     * @param pInBuf       åŠ å¯†çš„æ˜æ–‡éƒ¨åˆ†(Body)
+     * @param nInBufLen    é•¿åº¦
+     * @param pKey         key å¿…é¡»æ˜¯å¯è§å­—ç¬¦
+	 * @param pOutBuf      åŠ å¯†åçš„æ˜æ–‡éƒ¨åˆ† 
+     * @param pOutBufLen   åŠ å¯†åçš„é•¿åº¦
      */
     static void oi_symmetry_encrypt(const char* pInBuf, size_t nInBufLen, const char* pKey, char* pOutBuf, size_t *pOutBufLen);
 
     /**
-     * @brief ½âÃÜ.
+     * @brief è§£å¯†.
      * 
-     * @param pInBuf      ¼ÓÃÜµÄÃ÷ÎÄ²¿·Ö(Body) 
-     * @param nInBufLen   ³¤¶È
-     * @param pKey        key ±ØĞëÊÇ¿É¼û×Ö·û
-     * @param pOutBuf     ½âÃÜºóµÄÃ÷ÎÄ²¿·Ö
-     * @param pOutBufLen  ½âÃÜºóµÄ³¤¶È
-     * @return bool       ½âÃÜ³É¹¦·µ»Øtrue£¬·ñÔò·µ»Øfalse
+     * @param pInBuf      åŠ å¯†çš„æ˜æ–‡éƒ¨åˆ†(Body) 
+     * @param nInBufLen   é•¿åº¦
+     * @param pKey        key å¿…é¡»æ˜¯å¯è§å­—ç¬¦
+     * @param pOutBuf     è§£å¯†åçš„æ˜æ–‡éƒ¨åˆ†
+     * @param pOutBufLen  è§£å¯†åçš„é•¿åº¦
+     * @return bool       è§£å¯†æˆåŠŸè¿”å›trueï¼Œå¦åˆ™è¿”å›false
      */
     static bool oi_symmetry_decrypt(const char* pInBuf, size_t nInBufLen, const char* pKey, char* pOutBuf, size_t *pOutBufLen);
 
     /**
-     * @brief ¸ù¾İ¼ÓÃÜÊäÈëbuffer³¤¶È, ¼ÆËã¼ÓÃÜÊä³ö³¤¶È(8µÄÕûÊı±¶).
+     * @brief æ ¹æ®åŠ å¯†è¾“å…¥bufferé•¿åº¦, è®¡ç®—åŠ å¯†è¾“å‡ºé•¿åº¦(8çš„æ•´æ•°å€).
      * 
-     * @param len   buffer³¤¶È
-     * @return      size_t £¬¼ÓÃÜÊä³ö³¤¶È
+     * @param len   bufferé•¿åº¦
+     * @return      size_t ï¼ŒåŠ å¯†è¾“å‡ºé•¿åº¦
      */
     static size_t oi_symmetry_encrypt2_len(size_t len);
 
     /**
-     * @brief ¼ÓÃÜ.
+     * @brief åŠ å¯†.
      * 
-     * @param pInBuf      ¼ÓÃÜµÄÃ÷ÎÄ²¿·Ö(Body)
-     * @param nInBufLen   ³¤¶È
-     * @param pKey        key ±ØĞëÊÇ¿É¼û×Ö·û
-     * @param pOutBuf     ¼ÓÃÜºóµÄÃ÷ÎÄ²¿·Ö
-     * @param pOutBufLen  ¼ÓÃÜºóµÄ³¤¶È
+     * @param pInBuf      åŠ å¯†çš„æ˜æ–‡éƒ¨åˆ†(Body)
+     * @param nInBufLen   é•¿åº¦
+     * @param pKey        key å¿…é¡»æ˜¯å¯è§å­—ç¬¦
+     * @param pOutBuf     åŠ å¯†åçš„æ˜æ–‡éƒ¨åˆ†
+     * @param pOutBufLen  åŠ å¯†åçš„é•¿åº¦
      */
     static void oi_symmetry_encrypt2(const char* pInBuf, size_t nInBufLen, const char* pKey, char* pOutBuf, size_t *pOutBufLen);
 
     /**
-     * @brief ½âÃÜ.
+     * @brief è§£å¯†.
      * 
-     * @param pInBuf        ¼ÓÃÜµÄÃ÷ÎÄ²¿·Ö(Body) 
-     * @param nInBufLen     ³¤¶È
-     * @param pKey          key ±ØĞëÊÇ¿É¼û×Ö·û
-     * @param pOutBuf       ½âÃÜºóµÄÃ÷ÎÄ²¿·Ö
-     * @param pOutBufLen    ½âÃÜºóµÄ³¤¶È 
-     * @return              bool £¬³É¹¦½âÃÜ·µ»Øtrue£¬·ñÔò·µ»Øfalse
+     * @param pInBuf        åŠ å¯†çš„æ˜æ–‡éƒ¨åˆ†(Body) 
+     * @param nInBufLen     é•¿åº¦
+     * @param pKey          key å¿…é¡»æ˜¯å¯è§å­—ç¬¦
+     * @param pOutBuf       è§£å¯†åçš„æ˜æ–‡éƒ¨åˆ†
+     * @param pOutBufLen    è§£å¯†åçš„é•¿åº¦ 
+     * @return              bool ï¼ŒæˆåŠŸè§£å¯†è¿”å›trueï¼Œå¦åˆ™è¿”å›false
      */
     static bool oi_symmetry_decrypt2(const char* pInBuf, size_t nInBufLen, const char* pKey, char* pOutBuf, size_t *pOutBufLen);
 };

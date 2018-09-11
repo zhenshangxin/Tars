@@ -28,10 +28,12 @@ BaseNotify::~BaseNotify()
 {
 }
 
+// 添加管理命令与对应的处理方法
 void BaseNotify::addAdminCommandPrefix(const string& command, TAdminFunc func)
 {
     TC_LockT<TC_ThreadRecMutex> lock(*this);
 
+    // 插入命令与处理方法
     _procFunctors.insert(std::make_pair(command, func));
 
     NotifyObserver::getInstance()->registerPrefix(command, this);
@@ -54,6 +56,7 @@ bool BaseNotify::notify(const string& cmd, const string& params, TarsCurrentPtr 
 
     it =  _procFunctors.find(cmd);
 
+    // 执行函数
     if (it != _procFunctors.end())
     {
         return (it->second)(cmd, params, result);

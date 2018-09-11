@@ -61,10 +61,12 @@ public:
      */
     TC_TimeProvider() : _terminate(false),_use_tsc(true),_cpu_cycle(0),_buf_idx(0)
     {
+        // 清0
         memset(_t,0,sizeof(_t));
         memset(_tsc,0,sizeof(_tsc));
 
         struct timeval tv;
+        // 获取时间
         ::gettimeofday(&tv, NULL);
         _t[0] = tv;
         _t[1] = tv;

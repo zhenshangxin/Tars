@@ -28,7 +28,7 @@ class BaseNotify;
 
 //////////////////////////////////////////////////////////////
 /**
- * 全局接收管理命令，并通知到已注册的对象
+ * 全局接收管理命令，并通知到已注册的对象 被AdminServant所使用
  */
 class NotifyObserver : public TC_Singleton<NotifyObserver>, public TC_ThreadRecMutex
 {

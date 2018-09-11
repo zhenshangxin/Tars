@@ -27,7 +27,7 @@ class Application;
 
 ////////////////////////////////////////////////////////////////////////
 /**
- * 管理Servant
+ * 管理Servant 在application initializeServer中初始化
  */
 class AdminServant : public AdminF
 {
